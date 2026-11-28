@@ -124,7 +124,8 @@ def main(argv=None):
     p.add_argument("--influx-bytes", type=int, help="bytes the same data takes in your InfluxDB (you measure it)")
     p.add_argument("--precision", choices=sorted(mi.influx_lp.PRECISION_NS), default="ns")
     p.add_argument("--min-rate", type=float, default=100.0)
-    p.add_argument("--max-points", type=int, default=10_000_000, help="per file (memory bound, about 1 GB)")
+    p.add_argument("--max-points", type=int, default=10_000_000,
+                   help="line protocol only: points per file (memory bound, about 1 GB); other formats are read whole")
     p.add_argument("--unit")
     p.add_argument("--window", type=int, default=4096)
     p.add_argument("--no-build", action="store_true", help="skip building search envelopes")
@@ -149,10 +150,16 @@ def main(argv=None):
     skipped = [dict(s, file=Path(f).name, path=f) for f in sorted(mi.SKIPPED) for s in mi.SKIPPED[f]]
     if not any(ids for _f, ids in plans):
         raise SystemExit("nothing to import: " + json.dumps(skipped, indent=1))
+    owner = {}
+    for f, ids in plans:
+        for rid, _n in ids:
+            if rid in owner:
+                raise SystemExit(f"recording {rid} comes from both {owner[rid]} and {f}; rename one of the files")
+            owner[rid] = f
     create_collection(psycopg, opts.dsn, coll)
 
     os.environ["DATABASE_URL"] = opts.dsn          # the importer reads it; never put on a command line
-    results, import_s, imported = [], 0.0, {}
+    results, import_s, imported = [], 0.0, []
     for f, ids in plans:                           # one file at a time: --max-points bounds memory per file
         if not ids:
             continue
@@ -166,7 +173,9 @@ def main(argv=None):
         import_s += time.monotonic() - t0
         if code != 0:
             raise SystemExit(f"import of {f.name} failed (see the message above)")
-        imported = json.loads(buf.getvalue())
+        rep = json.loads(buf.getvalue())
+        imported.append({"file": f.name, **{k: rep[k] for k in ("status", "time_anchors", "warnings", "skipped")
+                                            if k in rep}})
         recs = mi.recordings(f, ropts)             # read again for verification, then released
         with psycopg.connect(opts.dsn, autocommit=True) as conn:
             for r in recs:
@@ -192,7 +201,7 @@ def main(argv=None):
               "storage": size, "import_seconds": round(import_s, 3),
               "samples_per_second": round(samples / import_s) if import_s else None,
               "envelope_build_seconds": build_s, "influx_bytes": opts.influx_bytes,
-              "importer": {k: imported.get(k) for k in ("status", "time_anchors", "warnings") if k in imported}}
+              "importer": imported}
     opts.out.mkdir(parents=True, exist_ok=True)
     (opts.out / "report.json").write_text(json.dumps(report, indent=1, default=str))
     (opts.out / "report.md").write_text(markdown(report))

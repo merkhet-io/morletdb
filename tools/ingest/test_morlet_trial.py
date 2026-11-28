@@ -66,6 +66,7 @@ class Trial(unittest.TestCase):
         self.assertEqual(r["influx_bytes"], 123456)
         self.assertIn("| Bit-exact read-back | 1 of 1 |", md)
         self.assertIn("InfluxDB, as you measured it", md)
+        self.assertEqual([x["file"] for x in r["importer"]], ["plant.lp"])
 
     def test_an_existing_collection_is_never_touched(self):
         with self.psycopg.connect(URL, autocommit=True) as c:

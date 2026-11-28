@@ -513,6 +513,17 @@ def read_csv(path, opts):
 MAX_EXACT_INT = 2 ** 53
 
 
+def check_unique(recs):
+    """Refuse two inputs that would write the same recording ID (for example same-named files from two folders):
+    the second would silently continue or conflict with the first."""
+    seen = {}
+    for f, r in recs:
+        if r.recording_id in seen:
+            raise ValueError(f"recording {r.recording_id} comes from both {seen[r.recording_id]} and {f}; rename a file "
+                             "or import them separately with different --prefix values")
+        seen[r.recording_id] = f
+
+
 def series_name(s):
     """A readable name for reports: measurement[tags].field (may be ambiguous for unusual names)."""
     tags = ",".join(f"{k}={v}" for k, v in s.tags)
@@ -832,6 +843,7 @@ def main(argv=None):
     SKIPPED.clear()                    # this run's skips only (main may be called repeatedly in one process)
     try:
         recs = [(f.name, r) for f in opts.files for r in recordings(f, opts)]
+        check_unique(recs)
         plan = [{"file": f, "recording_id": r.recording_id, "rate_hz": r.rate, "channel": r.channel, "unit": r.unit,
                  "samples": int(r.samples.size), "quantum": r.quantum,
                  "extractor": opts.extractor or extractor_for(r.rate),

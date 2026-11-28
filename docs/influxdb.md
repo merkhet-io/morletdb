@@ -35,7 +35,9 @@ docker run -d --name morlet-trial -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=c
 docker exec morlet-trial psql -U morlet -d trial -c "CREATE EXTENSION pg_morlet"
 ```
 
-Export one measurement for a short period as line protocol. Replace the paths, names and times with yours:
+Export a short period as line protocol. Replace the paths, names and times with yours. InfluxDB 1.x exports a whole
+database (`influx_inspect` has no measurement filter); that is fine, because the trial imports only fast numeric
+series and lists everything else it left out. InfluxDB 2.x can select one measurement:
 
 ```sh
 # InfluxDB 1.x
@@ -55,7 +57,8 @@ python tools/ingest/morlet_trial.py export.lp
 ```
 
 Optionally add `--influx-bytes N`: the size of the same data in your InfluxDB, measured by you, for example with
-`du -sb` on the directory that holds it.
+`du -sb` on the directory that holds it. `--max-points` (default 10 million per file, about 1 GB of memory) applies
+to line protocol; other formats are read whole.
 
 The trial imports every eligible numeric series at 100 Hz or faster, reads each back and compares it bit for bit,
 checks the time of the samples against the original timestamps (at every time anchor and at a sample of up to

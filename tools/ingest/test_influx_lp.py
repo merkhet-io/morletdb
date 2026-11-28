@@ -140,6 +140,19 @@ class Reader(unittest.TestCase):
             out = json.loads(err.getvalue())
             self.assertEqual((out["status"], out["skipped"][0]["series"]), ("nothing to import", "env.temp"))
 
+    def test_same_series_in_same_named_files_is_refused_before_the_database(self):
+        text = "\n".join(f"m v=1 {T0 + k * 1_000_000}" for k in range(200)) + "\n"
+        with tempfile.TemporaryDirectory() as d:
+            paths = [Path(d) / x / "export.lp" for x in ("a", "b")]
+            for p in paths:
+                p.parent.mkdir()
+                p.write_text(text)
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = mi.main([*map(str, paths), "--collection", "public.x", "--dsn", "host=/nonexistent"])
+            self.assertEqual(code, 1)
+            self.assertIn("comes from both", err.getvalue())
+
     def test_reading_twice_does_not_repeat_the_skip_list(self):
         text = "\n".join(f"m v=1,s=\"x\" {T0 + k * 1_000_000}" for k in range(200)) + "\n"
         with tempfile.TemporaryDirectory() as d:
