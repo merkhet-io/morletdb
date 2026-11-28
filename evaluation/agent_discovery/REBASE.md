@@ -47,3 +47,13 @@ The four scenarios contain 8,512 / 14,854 / 810 / 2,578 tokens respectively; see
 The artifact's source hashes match the measured source; all archived context hashes, byte counts
 and token counts were recounted. This is a separate development rerun, not the original D1 run,
 and makes no claim about task success or end-to-end token savings.
+
+### Review follow-up: provenance and sensor identity
+
+Before rerunning: retain the same four scenarios and baseline, add the missing sensor identity
+qualifications, and save `results-d1-20261128-643-review.json` separately. New artifacts record
+`source_dirty` alongside `source_commit`: true means HEAD identifies the base checkout, while
+`source_sha256` identifies the actual working files. The flag includes staged, unstaged and
+untracked changes and is sampled before writing the output. Older artifacts lack this field;
+its absence alone does not establish a clean checkout. The #643 review rerun will use committed
+sources and record `source_dirty: false`.

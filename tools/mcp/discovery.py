@@ -124,6 +124,12 @@ SEMANTICS = {
                      "multiple_sensors and multiple_recordings_per_sensor preserve distinct identities/recordings. "
                      "Clock breaks can produce several intervals; ambiguous_time flags backward-clock ambiguity, "
                      "and partial_window flags incomplete window coverage.",
+        "sensor_identity": {
+            "multiple_sensors": "Candidates have different channels, or different values of the operator's "
+                                "configured sensor metadata key.",
+            "sensor_not_recorded": "A sensor metadata key is configured but a candidate has no value for it. "
+                                   "Do not treat such candidates as one sensor or a uniquely identified sensor.",
+        },
         "coverage": "asset_not_found, recordings_without_time_axis and no_recording_at_time are distinct. "
                     "No candidate is not proof that nothing was recorded or happened: permissions, missing time "
                     "axes and retention can hide evidence. Inspect coverage and unreadable_samples.",

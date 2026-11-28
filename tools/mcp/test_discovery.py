@@ -72,6 +72,14 @@ class Discovery(unittest.TestCase):
         with patch.object(m, "connect", side_effect=AssertionError("discovery accessed DB")):
             asyncio.run(run())
 
+    def test_incident_sensor_identity_qualifications_are_discoverable(self):
+        result = asyncio.run(m.describe_operation("resolve_incident", "/semantics/sensor_identity"))
+        self.assertEqual(set(result.definition), {"multiple_sensors", "sensor_not_recorded"})
+        self.assertIn("different channels", result.definition["multiple_sensors"])
+        self.assertIn("configured sensor metadata key", result.definition["multiple_sensors"])
+        self.assertIn("no value", result.definition["sensor_not_recorded"])
+        self.assertIn("Do not treat", result.definition["sensor_not_recorded"])
+
     def test_newer_contract_hashes_track_schema_and_semantic_changes(self):
         tools = {t.name: t for t in asyncio.run(m.mcp.list_tools())}
         for name in ("explain_match", "resolve_incident"):
