@@ -71,8 +71,11 @@ a leading v; GHCR image tags do not.
 - **0.4.0-beta.7:** SQL version 0.3.18 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b6. The chunk format
   is unchanged. Calibration sets (experimental) keep references to the recordings they were captured from, so a
   reused recording ID never makes earlier evidence visible under row security (#621); with row security, grant writers
-  INSERT and readers SELECT on each `<collection>_calibration_refs` table after updating. Members record
-  interpretation revisions (#620). Search, `explain_match` and the MCP tools report interpretation revisions (#608).
+  INSERT and readers SELECT on each `<collection>_calibration_refs` table after updating. The update gives existing
+  revisions their references; a member whose recording no longer exists starts cut, so under row security its revision
+  is no longer visible to non-owners. Members record interpretation revisions (#620). Search, `explain_match` and the
+  MCP tools report interpretation revisions (#608) when the collection tracks history that the role can read
+  completely; an omitted revision never means unchanged.
   Faster sample-to-time mapping on recordings with many time anchors (part of #546). The steward and the codec are
   unchanged.
 - **0.4.0-beta.6:** SQL version 0.3.17 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b5. The chunk format
