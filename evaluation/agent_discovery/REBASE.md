@@ -57,3 +57,11 @@ qualifications, and save `results-d1-20261128-643-review.json` separately. New a
 untracked changes and is sampled before writing the output. Older artifacts lack this field;
 its absence alone does not establish a clean checkout. The #643 review rerun will use committed
 sources and record `source_dirty: false`.
+
+The [review rerun](results-d1-20261128-643-review.json) used clean commit
+`072330042e1c26d2fbc2646133386c97e1f55a1e` (`source_dirty: false`). Counts are
+8,512 / 14,854 / 810 / 2,571 tokens with unchanged byte counts. Only the incident contract hash
+in the index changed the final scenario's tokens; the scenarios do not fetch the additional
+sensor notes. All earlier artifacts remain unchanged. Validation passed: 14 discovery tests
+(including disposable PostgreSQL catalog tests), three measurement tests, artifact recounts,
+source-hash verification, repository prechecks and diff checks.

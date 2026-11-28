@@ -6,8 +6,8 @@ All data in the behavioral tests is synthetic.
 
 ## Follow-up #643: 24-tool measurement
 
-[New D1 artifact](results-d1-20261128-643.json), measured from source commit
-`50f86b5ea90c7805b1a059d861df3958f4eac01a` (merged main b9359f7 plus #643). The baseline is 921bfe7's
+[Review D1 artifact](results-d1-20261128-643-review.json), measured from clean source commit
+`072330042e1c26d2fbc2646133386c97e1f55a1e` (merged main b9359f7 plus #643). The baseline is 921bfe7's
 19 unchanged registrations and original instructions; current registrations total 24. The four scenarios
 remain those frozen in [PROTOCOL.md](PROTOCOL.md), with the baseline-count adjustment documented before
 this rerun in [REBASE.md](REBASE.md). The original 17/22-tool artifacts remain unchanged.
@@ -17,21 +17,29 @@ this rerun in [REBASE.md](REBASE.md). The original 17/22-tool artifacts remain u
 | Legacy eager: 19 tools | 0 | 37,766 | 8,512 |
 | Current eager: 24 tools | 0 | 64,494 | 14,854 |
 | Selective CLI, known operation | 2 | 3,289 | 810 |
-| Selective CLI, unknown operation | 3 | 8,908 | 2,578 |
+| Selective CLI, unknown operation | 3 | 8,908 | 2,571 |
+
+The [initial #643 artifact](results-d1-20261128-643.json) is retained unchanged. Its last scenario
+counted 2,578 tokens. The review adds sensor-identity qualifications, changing the incident contract
+hash in the index: the new hash tokenizes differently (2,571 tokens for the same 8,908 bytes).
+This difference does not measure the added notes' size or a behavioral improvement.
+New reports include `source_dirty`, sampled before output is written; if true, `source_commit`
+identifies the base revision and `source_sha256` identifies the actual working files. An absent dirty
+flag in older artifacts does not by itself establish a clean checkout.
 
 The index now includes hashes covering the semantic notes for `explain_match` and `resolve_incident`.
 These cases do **not** retrieve those notes: the frozen selective operation remains
 `investigate_interval_v2`. Eager definitions contain schemas and descriptions, not the separate discovery
 semantics. These are exact context counts, not measurements of an agent using the two newer tools.
 
-Validation: 13 discovery tests passed with no skips on disposable PostgreSQL 17.11 / installed SQL 0.3.16;
-two measurement CLI tests passed, including corruption rejection under `python -O`. New and historical
+Validation: 14 discovery tests passed with no skips on disposable PostgreSQL 17.11 / installed SQL 0.3.16;
+three measurement tests passed, including clean/staged/unstaged/untracked provenance and corruption rejection under `python -O`. New and historical
 artifacts passed recounts; source hashes matched the measured checkout, and repository prechecks passed.
 Tool execution and SQL behavior are unchanged; the full MCP integration suite was not rerun for this
 metadata-only follow-up. No migration is required.
 
 ```sh
-python evaluation/agent_discovery/measure.py --recount evaluation/agent_discovery/results-d1-20261128-643.json
+python evaluation/agent_discovery/measure.py --recount evaluation/agent_discovery/results-d1-20261128-643-review.json
 ```
 
 ## Historical 17/22-tool measurement
