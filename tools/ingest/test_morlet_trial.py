@@ -78,6 +78,12 @@ class Trial(unittest.TestCase):
             self.assertEqual(c.execute(f'SELECT count(*) FROM "{self.schema}".signals').fetchone()[0], 0)
             self.assertEqual(c.execute(f'SELECT count(*) FROM "{self.schema}".signals_chunks').fetchone()[0], 0)
 
+    def test_bad_times_are_a_usage_error(self):
+        with self.assertRaises(SystemExit) as cm:
+            mt.main(["--dsn", URL, "--influx-url", "http://127.0.0.1:9", "--influx-db", "x", "--measurement", "m",
+                     "--start", "yesterday", "--end", "2026-01-01T00:00:00Z"])
+        self.assertEqual(cm.exception.code, 2)
+
     def test_collection_names_are_qualified(self):
         self.assertEqual((mt.qualified("signals"), mt.qualified("plant.signals")), ("public.signals", "plant.signals"))
 

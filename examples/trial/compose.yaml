@@ -1,0 +1,36 @@
+# Try MorletDB on data from your own InfluxDB, on a laptop in your network. See README.md.
+#   docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-db plant --measurement vibration \
+#     --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
+#   docker compose down -v        # removes the trial database and everything in it
+services:
+  db:
+    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.4.0-beta.7}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: trial-only        # the database is reachable only from the trial container
+      POSTGRES_DB: trial
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d trial && psql -U morlet -d trial -tAc \"SELECT 1 FROM pg_extension WHERE extname='pg_morlet'\" | grep -q 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  trial:
+    build:
+      context: ../../tools/ingest
+      dockerfile: ../../examples/trial/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: host=db dbname=trial user=morlet password=trial-only
+      INFLUX_USERNAME: ${INFLUX_USERNAME:-}
+      INFLUX_PASSWORD: ${INFLUX_PASSWORD:-}
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-}
+    user: "${TRIAL_UID:-1000}:${TRIAL_GID:-1000}"   # Linux: export TRIAL_UID=$(id -u) TRIAL_GID=$(id -g)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # an InfluxDB on this laptop itself
+    volumes:
+      - ./morlet-trial-report:/report
+      - ./input:/input:ro                    # optional: exported files, passed as /input/<name>
