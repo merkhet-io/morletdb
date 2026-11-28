@@ -17,6 +17,11 @@
   0.3.18, where `morlet_interpretation_revisions` reports none, calibration-set capture reports `unknown` and a new
   label records no revision when row policies could hide revisions from the role (only MorletDB's own policy, permissive
   for every role and command, is trusted).
+- **Faster sample-to-time mapping on recordings with many time anchors (part of #546, SQL 0.3.18).** `morlet_sample_utc`
+  no longer builds the recording's whole time axis: it reads the anchor at or before the sample and its neighbours by
+  index. Results are unchanged; only numbering the segment still counts the breaks before the sample. Search evidence,
+  `utc_to_samples` error bounds and the MCP and SDK times of anchored recordings use it. Time-to-sample lookups are
+  unchanged and still linear in the anchors.
 
 ## 0.4.0-beta.6
 

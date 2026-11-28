@@ -4172,6 +4172,107 @@ END $$"#).unwrap();
         }
     }
 
+    /// #546: morlet_sample_utc looks up the piece of a sample locally (the anchor at or before it and its neighbours).
+    /// On random clocks with breaks, estimate sources, revisions, retractions and every ρ source, it returns exactly
+    /// the row of the piece list (morlet_time_pieces) for every sample, compared as text so numeric scale counts too.
+    #[pg_test]
+    fn time_anchor_local_lookup_equals_the_piece_list() {
+        anchor_fixture();
+        let mut state: u64 = 0x5eed_0546;
+        let mut next = |m: u64| {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (state >> 33) % m
+        };
+        // the reference: the piece list, filtered as morlet_sample_utc was before #546
+        let mismatches = |rid: &str, last: i64, rho: &str| {
+            Spi::get_one::<i64>(&format!(
+                "WITH o AS (SELECT n, (SELECT ROW(p.t_ref+(n-p.n_ref)*p.dt/p.dn,
+                    morlet_piece_uncertainty(p.kind,n,p.n_ref,p.u_ref,p.na,p.nb,p.ua,p.ub,p.rho_used,p.period_ns),
+                    CASE WHEN p.kind='start+rate' THEN 'start+rate' ELSE 'anchors' END,
+                    p.kind<>'start+rate' AND p.rho_used IS NULL,p.kind IN ('before','after') AND n<>p.n_ref,p.segment)::text
+                  FROM morlet_time_pieces('ta','{rid}',{rho}) p WHERE p.lo<=n AND (p.hi IS NULL OR n<p.hi)) AS v
+                  FROM generate_series(0,{last}::bigint) n),
+                s AS (SELECT n, (SELECT ROW(x.*)::text FROM morlet_sample_utc('ta','{rid}',n,{rho}) x) AS v
+                  FROM generate_series(0,{last}::bigint) n)
+                SELECT count(*) FROM o JOIN s USING (n) WHERE o.v IS DISTINCT FROM s.v OR o.v IS NULL"
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        for case in 0..6 {
+            let rid = format!("loc{case}");
+            let meta = if case == 5 {
+                ",'time_axis',jsonb_build_object('rho',0.002)"
+            } else {
+                ""
+            };
+            Spi::run(&format!("SELECT morlet_start_recording('ta','{rid}',1000,'x','g',jsonb_build_object('start_ns','1700000000000000000'{meta}))")).unwrap();
+            let count = if case == 4 { 1 } else { 12 + next(8) as usize };
+            let (mut n, mut t) = (
+                if case == 0 { 0 } else { next(40) as i64 },
+                ANCHOR_S + next(1000) as i128 * 1000,
+            );
+            let mut rows = vec![];
+            for k in 0..count {
+                // the first anchor's break starts no segment; later ones break at random, some stepping back
+                let brk = if k == 0 { next(2) == 0 } else { next(10) < 4 };
+                if k > 0 {
+                    let step = 5 + next(60) as i64;
+                    let nominal = step as i128 * MS;
+                    t = if brk {
+                        t + nominal - 20 * MS + next(41) as i128 * MS
+                    } else {
+                        t + nominal + (nominal * (next(4001) as i128 - 2000)) / 100_000
+                    };
+                    n += step;
+                }
+                let source = if next(5) == 0 { "estimate:ntp" } else { "pps" };
+                rows.push((rid.clone(), n, t, next(2000) as i64, source, brk));
+            }
+            let last = n + 80;
+            let refs: Vec<(&str, i64, i128, i64, &str, bool)> = rows
+                .iter()
+                .map(|r| (r.0.as_str(), r.1, r.2, r.3, r.4, r.5))
+                .collect();
+            Spi::run(&format!(
+                "SELECT morlet_add_time_anchors('ta','l{case}','{}')",
+                anchor_rows(&refs)
+            ))
+            .unwrap();
+            if count > 3 {
+                // revisions stay in the table, superseded: a new uncertainty and source, and a retracted anchor that
+                // starts no segment (so the order check still holds)
+                let k = 1 + next(count as u64 - 2) as i64;
+                Spi::run(&format!(
+                    "SELECT morlet_revise_time_anchor('ta',(SELECT anchor_id FROM ta_time_anchors
+                    WHERE recording_id='{rid}' AND sample_offset={} AND supersedes IS NULL),
+                    '{{\"uncertainty_ns\":77,\"source\":\"estimate:gps\"}}')",
+                    rows[k as usize].1
+                ))
+                .unwrap();
+                if let Some(r) = rows[1..count - 1]
+                    .iter()
+                    .find(|r| !r.5 && r.1 != rows[k as usize].1)
+                {
+                    Spi::run(&format!("SELECT morlet_revise_time_anchor('ta',(SELECT anchor_id FROM ta_time_anchors
+                        WHERE recording_id='{rid}' AND sample_offset={} AND supersedes IS NULL),retract=>true)", r.1)).unwrap();
+                }
+            }
+            for rho in ["NULL", "0", "0.001"] {
+                assert_eq!(mismatches(&rid, last, rho), 0, "case {case}, rho {rho}");
+            }
+        }
+        // without anchors: start and rate; without a start time either: no row on both paths
+        assert_eq!(mismatches("plain", 50, "NULL"), 0);
+        Spi::run("SELECT morlet_start_recording('ta','nostart',1000,'x','g','{}')").unwrap();
+        assert!(yes(
+            "SELECT NOT EXISTS(SELECT 1 FROM generate_series(0,20::bigint) n,
+            LATERAL morlet_sample_utc('ta','nostart',n) s)"
+        ));
+    }
+
     /// Review findings on the first version: a slope change inside a segment is not a gap; the anchor's own sample
     /// is not extrapolated; direct SQL keeps the rules (order checked, rows append-only, the cascade allowed); a
     /// malformed clock bound in the metadata is an error, not a silent default; revision batch ids are reserved.
