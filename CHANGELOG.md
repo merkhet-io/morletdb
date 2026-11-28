@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.4.0-beta.7
+
+**The seventh beta.** SQL version 0.3.18, with an update script from 0.3.17: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. Python SDK 0.1.0b6. The chunk format, the steward and the codec are unchanged; the MCP server reports
+interpretation revisions. **If you use calibration sets with row security on 0.4.0-beta.6, update:** after
+`ALTER EXTENSION pg_morlet UPDATE`, grant writers INSERT and readers SELECT on each `<collection>_calibration_refs`
+table. The update gives existing calibration-set revisions their references: a member whose recording no longer exists
+starts cut, so under row security its revision is no longer visible to non-owners (create a new revision from the
+current recordings). Collections without calibration sets or interpretation history behave as before.
+
 - **Calibration sets (experimental): evidence follows recordings, not reusable IDs (#621, SQL 0.3.18).** Each revision now keeps
   references to the recordings it was captured from. Deleting a member recording cuts its reference for good, so a
   later recording under the same ID never makes the earlier evidence visible under row security. Run
@@ -16,7 +26,9 @@
   budgets are unchanged, and fields that are not reported are left out of JSON output. Revisions are reported from SQL
   0.3.18, where `morlet_interpretation_revisions` reports none, calibration-set capture reports `unknown` and a new
   label records no revision when row policies could hide revisions from the role (only MorletDB's own policy, permissive
-  for every role and command, is trusted).
+  for every role and command, is trusted). A revision is reported only when the role can read the history completely,
+  with SELECT on the history table and EXECUTE on `morlet_interpretation_revisions` and
+  `morlet_interpretation_history_complete`; an omitted revision never means unchanged.
 - **Faster sample-to-time mapping on recordings with many time anchors (part of #546, SQL 0.3.18).** `morlet_sample_utc`
   no longer builds the recording's whole time axis: it reads the anchor at or before the sample and its neighbours by
   index. Results are unchanged. The segment number still counts the breaks before the sample. The SDK's incident
