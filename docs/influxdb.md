@@ -1,0 +1,84 @@
+# MorletDB for InfluxDB users
+
+**Keep InfluxDB for your trends. Put your waveforms in MorletDB.** This page is for teams that store high-rate
+signals (vibration, motor current, acoustics; hundreds of Hz to tens of kHz) in InfluxDB and run into its limits
+there. MorletDB does not replace InfluxDB for DevOps metrics or low-rate telemetry; InfluxDB is good at those.
+
+## When MorletDB fits
+
+| You need | InfluxDB | MorletDB |
+|---|---|---|
+| Store kHz waveforms compactly and bit for bit | one row and timestamp per sample | uniformly sampled recordings in compressed chunks; every read is bit-exact, signed zero included |
+| Find earlier intervals that look like this one | not built in | search by signal shape, with an explanation of each match |
+| Know which calibration and unit a sample was read under | not built in | interpretation revisions: corrections never rewrite samples ([Python SDK](python-sdk.md), [calibration sets](calibration-sets.md)) |
+| Join signals with assets, work orders, labels | limited | it is PostgreSQL: plain SQL joins, transactions, roles |
+| Run on a small edge box | see below | designed for it, with an unattended steward |
+
+Measured once on our waveform workload (B3.18 and M1c, [results](../evaluation/tsdb_b3/RESULTS.md)): InfluxDB 3
+Core 3.12.2 with one client writing six channels of a machine recording, against MorletDB 0.3.9-alpha.1 on the same
+machine. All loads were bit-exact in both. Ingestion was about 15× faster in MorletDB without durable
+acknowledgement (D2) and about 130× with it (D1, where InfluxDB's one-second WAL flush dominates a single
+sequential client; several writers were not measured). After InfluxDB's snapshot to Parquet, the data took 2.5×
+less space in MorletDB. InfluxDB needed a 4 GB memory cap to finish the load, MorletDB passed at 256 MB (caps were
+powers of two). These are one workload, one client and one machine, not a general ranking: several writers, other
+data and other InfluxDB versions were not measured. The results page states every condition.
+
+## 1. Try it on your own data first
+
+Nothing leaves your machine. Start the release image as a disposable database:
+
+```sh
+docker run -d --name morlet-trial -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me -e POSTGRES_DB=trial \
+  -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.7
+docker exec morlet-trial psql -U morlet -d trial -c "CREATE EXTENSION pg_morlet"
+```
+
+Export one measurement for a short period as line protocol (InfluxDB 1.x: `influx_inspect export -lponly`;
+2.x: `influxd inspect export-lp --bucket-id ... --measurement ... --start ... --end ...`), then:
+
+```sh
+python -m pip install -r tools/ingest/requirements.txt
+PGPASSWORD=change-me python tools/ingest/morlet_trial.py export.lp \
+  --dsn 'host=localhost port=54329 dbname=trial user=morlet' --influx-bytes "$(du -sb /var/lib/influxdb/... | cut -f1)"
+```
+
+The trial imports every series at 100 Hz or faster, reads each back and compares it bit for bit, compares the
+time of the samples with the original timestamps, and writes `morlet-trial-report/report.md`: what was imported,
+what was left out and why (slow trends, booleans, strings, conflicting points), storage and import time.
+`--influx-bytes` is optional: the size of the same data in your InfluxDB, measured by you. A trial is one run on
+one machine, not a benchmark.
+
+## 2. Bring history over
+
+```sh
+python tools/ingest/morlet_import.py export.lp --collection public.plant --create
+```
+
+Each numeric series (measurement, tag set, field) becomes a recording; the tags stay in its metadata. The
+timestamps become time anchors, so jitter, gaps and clock steps are kept, not smoothed: MorletDB reports the time
+of any sample with its uncertainty. Details: [import](import.md#influxdb-line-protocol).
+
+## 3. Keep your dashboards
+
+- **Grafana:** MorletDB is PostgreSQL, so Grafana's built-in PostgreSQL data source reads it; grant the dashboard
+  role read access only.
+- **Trends back into InfluxDB:** the metric bridge (experimental, [#639](https://github.com/merkhet-io/morletdb/issues/639))
+  publishes RMS, peak and mean of exact waveform windows as line protocol through Telegraf's `execd` input, with the
+  recording and interval in each point, so a dashboard can open the original waveform.
+
+## 4. Collect new waveforms
+
+Telegraf is a good collector for trends, not for waveforms: its points carry their own timestamps and decimal
+text, so even sampling and bit-exact values are not guaranteed. Use a MorletDB collector instead (MQTT, OPC UA,
+SeedLink in `examples/collectors/`, WinCC OA in `integrations/winccoa/`), or append from your own code with the
+[Python SDK](python-sdk.md).
+
+## Status and limits
+
+- MorletDB is in **beta** (0.4.0-beta.7): single node, PostgreSQL 17 to 19, Linux and macOS.
+- The line-protocol import and the trial are new; the bridge is experimental and not yet tested end to end with a
+  real Telegraf and InfluxDB.
+- Not supported: InfluxQL or Flux queries, the InfluxDB write API, irregular series below `--min-rate` as
+  recordings.
+
+Questions and reports: [GitHub issues](https://github.com/merkhet-io/morletdb/issues).

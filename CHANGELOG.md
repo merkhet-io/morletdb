@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **InfluxDB line-protocol import and a local trial (adoption).** `morlet_import.py` reads InfluxDB exports (`.lp`,
+  `--format influx`): each numeric series (measurement, tag set, field) at `--min-rate` (default 100 Hz) or faster
+  becomes a recording with its tags in the metadata and its timestamps as time anchors; slower series, booleans,
+  strings, conflicting points and integers beyond 2^53 are left out and reported. `morlet_trial.py` imports any
+  supported file into a new collection of a disposable database, proves every recording bit for bit and the time of
+  the samples against the original timestamps, and writes a local report (storage, import time, what was left out).
+  New guide: `docs/influxdb.md`.
+
 ## 0.4.0-beta.7
 
 **The seventh beta.** SQL version 0.3.18, with an update script from 0.3.17: run `ALTER EXTENSION pg_morlet UPDATE`
