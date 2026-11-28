@@ -1,0 +1,37 @@
+name: morlet-timescale-demo
+services:
+  db:
+    image: morlet-tc1:experiment
+    build:
+      context: ../../evaluation/timescale_coexistence
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: morlet_demo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:54348:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d morlet_demo"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  grafana:
+    image: grafana/grafana-oss:11.2.2
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3008:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      MORLET_PG_PASSWORD: ${READER_PASSWORD:?set READER_PASSWORD}
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+volumes:
+  database:

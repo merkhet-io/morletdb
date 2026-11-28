@@ -1,0 +1,53 @@
+{
+  "tick": {
+    "sources": [
+      {
+        "committed_windows": 0,
+        "source_id": 1,
+        "received_end": 8192,
+        "processed_end": 8192,
+        "pending_complete_samples": 0,
+        "partial_tail_samples": 0,
+        "complete": true
+      },
+      {
+        "committed_windows": 0,
+        "source_id": 2,
+        "received_end": 8192,
+        "processed_end": 8192,
+        "pending_complete_samples": 0,
+        "partial_tail_samples": 0,
+        "complete": true
+      }
+    ],
+    "refresh_start_ns": 1795866840000000000,
+    "refresh_end_ns": 1795870440000000000,
+    "more_sources": false,
+    "note": "Historical publication outside this recent refresh window needs explicit refresh."
+  },
+  "datasource": {
+    "message": "Database Connection OK",
+    "status": "OK"
+  },
+  "panel_rows": {
+    "Irregular telemetry (temperature, exact energy counter, state)": 3,
+    "Minute waveform summaries \u2014 materialized results": 2,
+    "Metric intervals \u2014 open original waveform": 4,
+    "Publication progress \u2014 pending is not healthy": 2,
+    "Aggregate refresh \u2014 source coverage is separate": 3
+  },
+  "browser": {
+    "dashboard_loaded": true,
+    "recording": "capture/B",
+    "interval": [
+      4096,
+      8192
+    ],
+    "interval_api_status": 200
+  },
+  "retention": {
+    "metric_rows": 0,
+    "aggregate_rows": 2,
+    "raw_available": true
+  }
+}

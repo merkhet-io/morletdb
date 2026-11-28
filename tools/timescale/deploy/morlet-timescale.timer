@@ -1,0 +1,10 @@
+[Unit]
+Description=Publish pending waveform metrics and refresh recent aggregates
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=10s
+Unit=morlet-timescale.service
+
+[Install]
+WantedBy=timers.target

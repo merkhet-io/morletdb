@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: MorletDB + TimescaleDB
+    uid: morlet-timescale
+    type: grafana-postgresql-datasource
+    url: db:5432
+    user: timescale_demo_reader
+    jsonData:
+      database: morlet_demo
+      sslmode: disable
+      postgresVersion: 1700
+      maxOpenConns: 4
+    secureJsonData:
+      password: ${MORLET_PG_PASSWORD}
+    editable: false

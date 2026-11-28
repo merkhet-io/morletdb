@@ -1,0 +1,17 @@
+[Unit]
+Description=Bounded MorletDB to TimescaleDB metric publication
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Install the checkout and environment explicitly; no root or superuser is required
+# when this account owns only this trust domain's adapter/source tables.
+User=morlet-timescale
+WorkingDirectory=/opt/morletdb
+EnvironmentFile=/etc/morlet-timescale.env
+ExecStart=/opt/morletdb/.venv/bin/python tools/timescale/cli.py tick --max-windows 10 --max-sources 100 --refresh-minutes 60
+TimeoutStartSec=300
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

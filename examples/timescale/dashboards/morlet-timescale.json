@@ -1,0 +1,219 @@
+{
+  "uid": "morlet-timescale",
+  "title": "MorletDB + TimescaleDB investigation",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "timezone": "utc",
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Irregular telemetry (temperature, exact energy counter, state)",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "morlet-timescale"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "morlet-timescale"
+          },
+          "format": "table",
+          "editorMode": "code",
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(time_ns/1000000000.0) AS time,asset,temperature,energy_counter::text,state FROM morlet_metrics.telemetry ORDER BY time_ns DESC LIMIT 500"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Minute waveform summaries \u2014 materialized results",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "morlet-timescale"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "morlet-timescale"
+          },
+          "format": "table",
+          "editorMode": "code",
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(bucket_ns/1000000000.0) AS time,s.asset,s.recording_id,m.samples,m.minimum,m.maximum,m.mean,m.rms FROM morlet_metrics.minute m JOIN morlet_metrics.sources s USING(source_id) ORDER BY bucket_ns DESC LIMIT 500"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Metric intervals \u2014 open original waveform",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "morlet-timescale"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "morlet-timescale"
+          },
+          "format": "table",
+          "editorMode": "code",
+          "rawQuery": true,
+          "rawSql": "SELECT e.evidence_id,s.asset,s.recording_id,e.start_sample,e.end_sample,\n          e.time_ns::text AS exact_time_ns,m.rms,\n          CASE WHEN m.evidence_id IS NULL THEN 'metric expired' ELSE 'metric retained' END AS metric_state,\n          CASE WHEN r.recording_id IS NULL THEN 'source unavailable'\n            WHEN (SELECT coalesce(sum(least(c.start_sample+c.sample_count,e.end_sample)-greatest(c.start_sample,e.start_sample)),0)\n                  FROM signals_chunks c WHERE c.recording_id=s.recording_id\n                    AND c.start_sample<e.end_sample AND c.start_sample+c.sample_count>e.start_sample)=e.end_sample-e.start_sample\n            THEN 'samples present; verify on read' ELSE 'raw samples unavailable' END AS source_state,\n          l.url AS waveform_url\n          FROM morlet_metrics.evidence e JOIN morlet_metrics.sources s USING(source_id)\n          LEFT JOIN signals r USING(recording_id)\n          LEFT JOIN morlet_metrics.metrics m ON m.time_ns=e.time_ns AND m.evidence_id=e.evidence_id\n          LEFT JOIN morlet_metrics.viewer_links l ON l.evidence_id=e.evidence_id\n          ORDER BY e.time_ns DESC,e.evidence_id LIMIT 500"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "waveform_url"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open exact interval",
+                    "url": "${__value.raw:raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Publication progress \u2014 pending is not healthy",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "morlet-timescale"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "morlet-timescale"
+          },
+          "format": "table",
+          "editorMode": "code",
+          "rawQuery": true,
+          "rawSql": "SELECT s.asset,s.recording_id,(r.checkpoint->>'end')::bigint AS received_end,s.processed_end,\n          (r.checkpoint->>'end')::bigint/s.window_samples*s.window_samples-s.processed_end AS pending_complete_samples,\n          (r.checkpoint->>'end')::bigint%s.window_samples AS partial_tail_samples\n          FROM morlet_metrics.sources s LEFT JOIN signals r USING(recording_id) ORDER BY s.source_id LIMIT 500"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "Aggregate refresh \u2014 source coverage is separate",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "morlet-timescale"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "morlet-timescale"
+          },
+          "format": "table",
+          "editorMode": "code",
+          "rawQuery": true,
+          "rawSql": "SELECT start_ns::text,end_ns::text,finished_at,extract(epoch FROM clock_timestamp()-finished_at) AS seconds_since_refresh FROM morlet_metrics.refreshes ORDER BY id DESC LIMIT 20"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "tags": [
+    "morletdb",
+    "timescaledb"
+  ],
+  "templating": {
+    "list": []
+  }
+}

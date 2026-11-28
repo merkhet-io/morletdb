@@ -1,0 +1,174 @@
+{
+  "kind": "development compatibility experiment",
+  "started_utc": "20261128T121322Z",
+  "protocol_sha256": "ec272c94003669a1b27eaca0106a6878079b69937465c285cd6bec99048fb225",
+  "runner_sha256": "26ad2c36d0e0094b7445b97ccbf22125d41c87b46398c274b8edee44bb73f3e5",
+  "cases": [
+    {
+      "name": "morlet_then_timescale",
+      "status": "pass",
+      "observed": {
+        "extensions": [
+          [
+            "pg_morlet",
+            "0.3.14"
+          ],
+          [
+            "plpgsql",
+            "1.0"
+          ],
+          [
+            "timescaledb",
+            "2.31.0"
+          ]
+        ],
+        "binary_equal": true
+      }
+    },
+    {
+      "name": "timescale_then_morlet",
+      "status": "pass",
+      "observed": {
+        "extensions": [
+          [
+            "pg_morlet",
+            "0.3.14"
+          ],
+          [
+            "plpgsql",
+            "1.0"
+          ],
+          [
+            "timescaledb",
+            "2.31.0"
+          ]
+        ],
+        "binary_equal": true
+      }
+    },
+    {
+      "name": "atomicity_and_retries",
+      "status": "pass",
+      "observed": {
+        "stats": [
+          1024,
+          -1.0,
+          2.0,
+          0.5,
+          1.224744871391589
+        ],
+        "paired_rollback": true,
+        "identical_retry_rows": 1,
+        "conflict": {
+          "sqlstate": "P0001",
+          "error": "conflicting replay at chunk offset\nCONTEXT:  PL/pgSQL function public.morlet_append_chunk(regclass,text,bigint,double precision[]) line 22 at RAISE"
+        },
+        "samples_and_metric_unchanged": true
+      }
+    },
+    {
+      "name": "terminated_writer_resume",
+      "status": "pass",
+      "observed": {
+        "uncommitted_pair_absent": true,
+        "retry_committed_binary_equal": true
+      }
+    },
+    {
+      "name": "late_telemetry_refresh",
+      "status": "pass",
+      "observed": {
+        "before": [
+          2,
+          3.0
+        ],
+        "after_late_insert_before_refresh": [
+          2,
+          3.0
+        ],
+        "after_refresh": [
+          3,
+          6.0
+        ]
+      }
+    },
+    {
+      "name": "compressed_metrics_drilldown",
+      "status": "pass",
+      "observed": {
+        "compressed_chunks": [
+          [
+            "_timescaledb_internal._hyper_1_1_chunk"
+          ]
+        ],
+        "drilldown_rows": 2,
+        "binary_equal": true
+      }
+    },
+    {
+      "name": "permissions_and_supported_combinations",
+      "status": "pass",
+      "observed": {
+        "non_owner_direct_reads_both_enablement_orders": true,
+        "rls_before_cagg": {
+          "accepted": false,
+          "sqlstate": "0A000",
+          "error": "cannot create continuous aggregate on hypertable with row security"
+        },
+        "rls_after_cagg": {
+          "accepted": true
+        },
+        "compression_on_rls": {
+          "accepted": false,
+          "sqlstate": "0A000",
+          "error": "columnstore cannot be used on table with row security"
+        },
+        "note": "No aggregate granted to tenant; acceptance alone is not authorization support."
+      }
+    },
+    {
+      "name": "retention_refresh",
+      "status": "pass",
+      "observed": {
+        "dropped": [
+          [
+            "_timescaledb_internal._hyper_2_2_chunk"
+          ]
+        ],
+        "source_rows": 0,
+        "aggregate_before_refresh": [
+          [
+            3,
+            6.0
+          ]
+        ],
+        "aggregate_after_refresh": [],
+        "morlet_binary_equal": true
+      }
+    },
+    {
+      "name": "restart",
+      "status": "pass",
+      "observed": {
+        "samples_binary_equal": true,
+        "committed_metrics": 2
+      }
+    },
+    {
+      "name": "logical_restore",
+      "status": "pass",
+      "observed": {
+        "dump_bytes": 60248,
+        "samples_binary_equal": true,
+        "metric_rows": 2,
+        "aggregate_rows": 0
+      }
+    }
+  ],
+  "checkout_revision": "f141ccc5c2f675a5bbeddec7a0e12adcc732e0d3",
+  "image": "sha256:994f2c53751f573ae6132a2f1eaa9b7541f91e911433238aec17ce23f12de4a2",
+  "architecture": "arm64",
+  "timescale_source_revision": "4fa2a7c6b579171a1a8966fd87a0d4189ebab43b",
+  "postgres": "PostgreSQL 17.12 (Debian 17.12-1.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "finished_utc": "2026-11-28T12:13:26.161342+00:00"
+}
