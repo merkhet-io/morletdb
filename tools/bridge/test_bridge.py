@@ -298,7 +298,8 @@ class Database(unittest.TestCase):
         self.b.drain(self.sid, 10)
         self.b.add_sink("influx", "line", options={"measurement": "vibration"})
         for bad in ({"tags": {"asset": "x"}}, {"tags": {"site": ""}}, {"tags": ["site"]}, {"tags": {"_field": "x"}},
-                    {"tags": {"time": "x"}}, {"tags": {"site": "a\nb"}}, {"tags": {"si\nte": "a"}}):
+                    {"tags": {"time": "x"}}, {"tags": {"site": "a\nb"}}, {"tags": {"si\nte": "a"}},
+                    {"tags": {"mean": "x"}}, {"tags": {"recording_id": "x"}}, {"tags": {"ledger_id": "x"}}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 self.b.add_sink("bad", "line", options=bad)
 
@@ -335,7 +336,8 @@ class Database(unittest.TestCase):
         cli = Path(__file__).with_name("cli.py")
         for args in (["telegraf", "x", "--signal", "none", "--interval", "0"], ["add-sink", "x", "postgres",
                      "--measurement", "m"], ["status", "0", "--sink", "x"],
-                     ["add-sink", "x", "line", "--tag", "site=a", "--tag", "site=b"]):
+                     ["add-sink", "x", "line", "--tag", "site=a", "--tag", "site=b"],
+                     ["add-sink", "x", "line", "--tag", "=x"]):
             with self.subTest(args=args):
                 p = subprocess.run([sys.executable, "-I", str(cli), "--dsn", self.dsn, *args], capture_output=True,
                                    text=True, timeout=30)

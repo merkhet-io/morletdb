@@ -115,8 +115,8 @@ def main(argv=None):
         elif args.cmd == "add-sink":
             opts = {"measurement": args.measurement} if args.measurement else {}
             if args.tag:
-                if any("=" not in t for t in args.tag):
-                    p.error("--tag takes KEY=VALUE")
+                if any("=" not in t or t.startswith("=") for t in args.tag):
+                    p.error("--tag takes KEY=VALUE with a nonempty key")
                 pairs = [t.split("=", 1) for t in args.tag]
                 if len({k for k, _ in pairs}) != len(pairs):
                     p.error("--tag: each key once")

@@ -27,6 +27,10 @@ SCHEMA_VERSION = 1
 CALCULATION = "interval-stats-v1"
 STATS = ("minimum", "maximum", "mean", "rms")
 MAX_WINDOW = 1048576
+# A sink's fixed tags may not reuse the series tags, the fields line() writes, or InfluxDB's reserved `time`.
+POINT_FIELDS = (*STATS, "sample_count", "start_sample", "end_sample", "ledger_id", "end_time_ns", "recording_id",
+                "collection", "interpretation_revision", "nonfinite")
+RESERVED_TAG_KEYS = frozenset(("asset", "calculation", "channel", "time", *POINT_FIELDS))
 
 
 def digest(value):
@@ -267,10 +271,10 @@ class Bridge:
             tags = (options or {}).get("tags", {})
             if not isinstance(tags, dict) or any(
                     not isinstance(k, str) or not isinstance(v, str) or not k or not v or "\n" in k + v or "\r" in k + v
-                    or k in ("asset", "calculation", "channel", "time") or k.startswith("_") for k, v in tags.items()):
+                    or k in RESERVED_TAG_KEYS or k.startswith("_") for k, v in tags.items()):
                 raise ValueError("line sink tags must map nonempty strings without line breaks to nonempty strings; "
-                                 "asset, calculation, channel, time and keys starting with _ (reserved by InfluxDB) "
-                                 "are not allowed")
+                                 "the series tags, the point's field names, time and keys starting with _ "
+                                 "(reserved by InfluxDB) are not allowed")
         self.conn.execute("""INSERT INTO morlet_bridge.sinks (name, kind, target, options) VALUES (%s, %s, %s, %s)
             ON CONFLICT (name) DO NOTHING""", (name, kind, target, Jsonb(options or {})))
         row = self.one("SELECT * FROM morlet_bridge.sinks WHERE name = %s", (name,))
