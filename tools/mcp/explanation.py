@@ -7,7 +7,9 @@ import psycopg
 SEARCH_MAX_LAG_FRACTION = 0.075
 MAX_BINS = 64
 INTERPRETATION = ("Contributions explain the similarity score, not a fault's cause. Envelopes are normalized: compare "
-                  "amplitude with query_stats and match_stats. Timing is no finer than one envelope step (step_samples).")
+                  "amplitude with query_stats and match_stats. Timing is no finer than one envelope step (step_samples). "
+                  "interpretation_revisions gives the unit and calibration revision each recording was read under; "
+                  "absent means not tracked or not readable, not unchanged.")
 
 
 def run(connect, checked, collection, query_recording_id, query_start, query_end, match_recording_id, match_start,

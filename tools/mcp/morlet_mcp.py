@@ -975,6 +975,20 @@ def summarize_scope(ranges, bounds, rate, t0s, max_periods=10, window=None):
 SCOPE_TIMEOUT_MS = int(os.environ.get("MORLET_MCP_SCOPE_TIMEOUT_MS", "5000"))   # morlet_coverage: ~1.3 us per window
 
 
+def interpretation_revisions(conn, c, recording_ids):
+    """The current interpretation revision (unit and calibration, #600) of each listed recording that has one: empty on
+    servers before SQL 0.3.18 (0.3.17 could undercount behind row policies), without EXECUTE on the function, with the
+    history off, or when this role cannot read it reliably (#608)."""
+    if not conn.execute(                      # CASE: has_function_privilege fails on a function that does not exist
+            "SELECT CASE WHEN to_regprocedure('public.morlet_interpretation_history_complete(regclass)') IS NULL "
+            "THEN false ELSE has_function_privilege('public.morlet_interpretation_history_complete(regclass)','EXECUTE') "
+            "AND has_function_privilege('public.morlet_interpretation_revisions(regclass,text[])','EXECUTE') END"
+            ).fetchone()[0]:
+        return {}
+    return dict(conn.execute("SELECT recording_id, revision FROM public.morlet_interpretation_revisions(%s::regclass, "
+                             "%s::text[])", (c, sorted(recording_ids))).fetchall())
+
+
 def search_scope(conn, c, src, flt, window, time_bounds=(None, None), before=None):
     """search_scope_exact within SCOPE_TIMEOUT_MS; past it, a scope that says it is unknown (never complete)."""
     try:
@@ -1149,7 +1163,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     metadata <key> equals the query's (e.g. "metadata:part" for the other channels of the same part in
     series production). On servers with SQL 0.3.11 the search itself leaves out "recording", and "occurrence"
     without shifts, so top_k hits remain whenever enough exist; otherwise up to 100 candidates are fetched so that
-    up to top_k hits remain. The query reports how many were left out."""
+    up to top_k hits remain. The query reports how many were left out.
+    The query and each hit carry interpretation_revision, the recording's current unit and calibration revision, when
+    the collection tracks one this role can read; compare amplitudes only between known revisions."""
     top_k = max(1, min(top_k, 100))
     if exclude and exclude not in ("recording", "occurrence") and not exclude.startswith("metadata:"):
         raise ValueError('exclude must be "", "recording", "occurrence" or "metadata:<key>"')
@@ -1210,6 +1226,7 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
         q0 = start_time(src["metadata"])
         before = q0 + timedelta(seconds=start_sample / src["rate"]) if before_only and q0 else None
         scope = search_scope(conn, c, src, flt, window, bounds, before)
+        revisions = interpretation_revisions(conn, c, {recording_id, *(h["recording_id"] for r in runs for h in r)})
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)
     excluded = 0
@@ -1234,6 +1251,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                                         else (metas.get(h["recording_id"]) or {}).get(key) == own)]
         excluded, hits = len(hits) - len(keep), keep
     hits = hits[:top_k]
+    for h in hits:                                    # #608: absent when not tracked or not readable, never guessed
+        if h["recording_id"] in revisions:
+            h["interpretation_revision"] = revisions[h["recording_id"]]
     t0 = start_time(src["metadata"])
     return {"query": {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
                       "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
@@ -1241,7 +1261,8 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                       "time_range": [time_from or None, time_to or None],
                       **({"exclude": exclude, "excluded_hits": excluded} if exclude and not in_sql else {}),
                       **({"exclude": exclude, "excluded_by": "search (SQL 0.3.11)"} if in_sql else {}),
-                      **({"query_note": note} if note else {})},
+                      **({"query_note": note} if note else {}),
+                      **({"interpretation_revision": revisions[recording_id]} if recording_id in revisions else {})},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)",
             "scope": scope, "hits": hits,
             "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}

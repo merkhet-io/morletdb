@@ -102,3 +102,29 @@ class Database(unittest.TestCase):
         out = json.loads(call(**self.args(query_shift_samples=shift)).content[0].text)
         self.assertEqual(out["distance"], expected)
         self.assertEqual((out["query"]["start_sample"], out["query"]["end_sample"]), (shift, 2048 + shift))
+
+    def test_revisions_are_reported_only_when_tracked(self):
+        # #608: the unit and calibration revision each recording was read under; absent, not 0, without the history
+        start = self.conn.execute(
+            "SELECT start_sample FROM morlet_search_envelope_interval(%s::regclass,'q',0,2048,top_k=>20) "
+            "WHERE recording_id='m' ORDER BY distance LIMIT 1", (self.coll,)).fetchone()[0]
+        untracked = json.loads(call(**self.args(match_start=start)).content[0].text)
+        self.assertNotIn("interpretation_revisions", untracked)
+        hits = m.search_similar(self.coll, "q", 0, 2048, top_k=3)
+        self.assertNotIn("interpretation_revision", hits["query"])
+        self.assertTrue(hits["hits"])
+        self.assertTrue(all("interpretation_revision" not in h for h in hits["hits"]))
+        if self.conn.execute("SELECT to_regproc('public.morlet_enable_interpretation') IS NULL").fetchone()[0]:
+            self.skipTest("needs pg_morlet SQL 0.3.17")
+        db = morletdb.Client(self.conn)
+        db.enable_interpretation(self.coll)
+        db.correct_interpretation(self.coll, "m", unit="g", calibration={"g_per_count": 2}, reason="certificate")
+        tracked = json.loads(call(**self.args(match_start=start)).content[0].text)
+        self.assertEqual(tracked["interpretation_revisions"], {"q": 0, "m": 1})
+        self.assertEqual({k: v for k, v in tracked.items() if k != "interpretation_revisions"}, untracked)
+        again = m.search_similar(self.coll, "q", 0, 2048, top_k=3)
+        self.assertEqual(again["query"]["interpretation_revision"], 0)
+        self.assertEqual([(h["recording_id"], h["start_sample"], h["distance"]) for h in again["hits"]],
+                         [(h["recording_id"], h["start_sample"], h["distance"]) for h in hits["hits"]])
+        self.assertEqual({h["recording_id"]: h["interpretation_revision"] for h in again["hits"]},
+                         {h["recording_id"]: {"q": 0, "m": 1}[h["recording_id"]] for h in again["hits"]})

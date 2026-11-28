@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import contextlib
-from dataclasses import asdict
+from dataclasses import fields, is_dataclass
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import Decimal
@@ -22,8 +22,16 @@ from ._errors import InvalidInputError, InvestigationLimitError, NotFoundError, 
 from ._types import CoverageRange, IntervalRef, InvestigationContext, InvestigationResult
 
 
+# Optional fields added after a result format was in use (#608): absent rather than null when not reported, so
+# investigation output, its byte budget and evidence manifests stay as they were.
+_ABSENT_WHEN_NONE = frozenset({"interpretation_revision", "interpretation_revisions"})
+
+
 def result_dict(result):
     def clean(value):
+        if is_dataclass(value) and not isinstance(value, type):
+            return {f.name: clean(getattr(value, f.name)) for f in fields(value)
+                    if not (f.name in _ABSENT_WHEN_NONE and getattr(value, f.name) is None)}
         if isinstance(value, dict):
             return {k: clean(v) for k, v in value.items()}
         if isinstance(value, (list, tuple)):
@@ -37,7 +45,7 @@ def result_dict(result):
         if isinstance(value, float) and not math.isfinite(value):
             return None
         return value
-    return clean(asdict(result))
+    return clean(result)
 
 
 # Server budget errors: compare_to_history's history, value spreads and stream search ("... exceeds N segments"),
