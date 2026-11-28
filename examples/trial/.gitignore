@@ -1,0 +1,4 @@
+morlet-trial-report/*
+!morlet-trial-report/.gitkeep
+input/*
+!input/.gitkeep

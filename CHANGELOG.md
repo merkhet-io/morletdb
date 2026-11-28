@@ -9,7 +9,10 @@
   ±1e9, series with fewer than two points or spanning more than about 104 days. `morlet_trial.py` imports any
   supported file into a new collection of a disposable database, proves every recording bit for bit, checks the time
   of the samples against the original timestamps at every anchor and at a sample of up to 2,000 points per
-  recording, and writes a local report (storage, import and build time, what was left out).
+  recording, and writes a local report (storage, import and build time, what was left out). It can also read one
+  measurement straight from a running InfluxDB 1.x or 2.x over HTTP (`--influx-url`; read-only credentials from the
+  environment; in slices with pauses), values exact including negative zero and integer types (tested against
+  InfluxDB 1.8.10 and 2.7.12). `examples/trial` runs all of it with one `docker compose run` on a laptop.
   New guide: `docs/influxdb.md`.
 - **Metric bridge (experimental, phase 1 of #639).** `tools/bridge` publishes interval metrics (minimum, maximum, mean,
   RMS) computed from exact waveform windows into a ledger with exact nanosecond times, a raw-sample hash and the

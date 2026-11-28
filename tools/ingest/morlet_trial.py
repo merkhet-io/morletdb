@@ -4,6 +4,12 @@
   export DATABASE_URL='host=localhost port=54329 dbname=trial user=morlet' PGPASSWORD=...
   python tools/ingest/morlet_trial.py export.lp
 
+Or read straight from a running InfluxDB 1.x or 2.x (read-only, in gentle slices; no export, no shell on the device):
+
+  export INFLUX_USERNAME=reader INFLUX_PASSWORD=...          # 1.x; for 2.x: export INFLUX_TOKEN=...
+  python tools/ingest/morlet_trial.py --influx-url http://plc:8086 --influx-db plant --measurement vibration \
+    --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
+
 Any format the importer reads works (InfluxDB line protocol `.lp`, CSV, WAV, EDF, miniSEED, TDMS, MorletDB Parquet).
 The trial:
 
@@ -35,6 +41,7 @@ import time
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import influx_source  # noqa: E402
 import morlet_import as mi  # noqa: E402
 
 PAGE = 1 << 20                     # samples per read-back request
@@ -115,7 +122,18 @@ def create_collection(psycopg, dsn, coll):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("files", nargs="+", type=Path)
+    p.add_argument("files", nargs="*", type=Path)
+    g = p.add_argument_group("read from a running InfluxDB 1.x or 2.x instead of files (credentials: INFLUX_USERNAME/"
+                             "INFLUX_PASSWORD for 1.x, INFLUX_TOKEN for 2.x, from the environment only)")
+    g.add_argument("--influx-url", help="e.g. http://192.168.0.10:8086")
+    g.add_argument("--influx-db", help="1.x: database")
+    g.add_argument("--influx-org", help="2.x: organization")
+    g.add_argument("--influx-bucket", help="2.x: bucket")
+    g.add_argument("--measurement")
+    g.add_argument("--start", help="UTC, ISO 8601, e.g. 2026-11-28T10:00:00Z")
+    g.add_argument("--end", help="UTC, ISO 8601; keep the window short (minutes)")
+    g.add_argument("--slice-s", type=float, default=60.0, help="seconds of data per request (default 60)")
+    g.add_argument("--pause-s", type=float, default=0.5, help="pause between requests (default 0.5 s)")
     p.add_argument("--dsn", default=os.environ.get("DATABASE_URL", ""),
                    help="a disposable database with pg_morlet (default: DATABASE_URL, else the libpq environment; "
                    "keep passwords in PGPASSWORD or ~/.pgpass, not on the command line)")
@@ -133,6 +151,29 @@ def main(argv=None):
     import psycopg
     import psycopg.sql  # noqa: F401
     coll = qualified(opts.collection)
+    source = None
+    if opts.influx_url:
+        if opts.files:
+            p.error("give files or --influx-url, not both")
+        if not (opts.measurement and opts.start and opts.end):
+            p.error("--influx-url needs --measurement, --start and --end")
+        opts.out.mkdir(parents=True, exist_ok=True)
+        lp_path = opts.out / "source.lp"
+        try:
+            source = influx_source.fetch(opts.influx_url, lp_path, opts.measurement, mi.iso_ns(opts.start)[0],
+                                         mi.iso_ns(opts.end)[0], db=opts.influx_db, org=opts.influx_org,
+                                         bucket=opts.influx_bucket, slice_s=opts.slice_s, pause_s=opts.pause_s,
+                                         max_points=opts.max_points, iso_ns=mi.iso_ns,
+                                         log=lambda m: print(m, file=sys.stderr))
+        except influx_source.SourceError as exc:
+            raise SystemExit(f"reading from InfluxDB failed: {exc}") from None
+        source["sha256"] = hashlib.sha256(lp_path.read_bytes()).hexdigest()
+        (opts.out / "source.json").write_text(json.dumps(source, indent=1))
+        if not source["lines"]:
+            raise SystemExit(f"no points for {opts.measurement} between {opts.start} and {opts.end}")
+        opts.files = [lp_path]
+    elif not opts.files:
+        p.error("give files, or --influx-url with --measurement, --start and --end")
 
     with psycopg.connect(opts.dsn, autocommit=True) as conn:
         caps = conn.execute("""SELECT public.morlet_version(),
@@ -196,7 +237,7 @@ def main(argv=None):
         size = storage(conn, coll)
     input_bytes = sum(os.path.getsize(f) for f in opts.files)
     samples = sum(x["samples"] for x in results)
-    report = {"morletdb_sql": version, "collection": coll, "files": [f.name for f in opts.files],
+    report = {"morletdb_sql": version, "collection": coll, "source": source, "files": [f.name for f in opts.files],
               "input_bytes": input_bytes, "samples": samples, "recordings": results, "skipped": skipped,
               "storage": size, "import_seconds": round(import_s, 3),
               "samples_per_second": round(samples / import_s) if import_s else None,
@@ -220,8 +261,12 @@ def _mib(b):
 def markdown(r):
     exact = sum(x["bit_exact"] for x in r["recordings"])
     lines = ["# MorletDB trial report", "",
-             f"MorletDB SQL {r['morletdb_sql']}. Files: {', '.join(r['files'])}. Generated locally; nothing was sent "
-             "anywhere. A trial on this data on this machine, not a benchmark.", "",
+             f"MorletDB SQL {r['morletdb_sql']}. "
+             + (f"Read from InfluxDB {r['source']['influxdb_version']} at {r['source']['url']}: measurement "
+                f"`{r['source']['measurement']}`, {r['source']['start']} to {r['source']['end']}, "
+                f"{r['source']['slices']} slices, {r['source']['lines']:,} lines (kept as source.lp). "
+                if r.get("source") else f"Files: {', '.join(r['files'])}. ")
+             + "Generated locally; nothing was sent anywhere. A trial on this data on this machine, not a benchmark.", "",
              "| | |", "|---|---|",
              f"| Recordings imported | {len(r['recordings'])} ({r['samples']:,} samples) |",
              f"| Bit-exact read-back | {exact} of {len(r['recordings'])} |",
