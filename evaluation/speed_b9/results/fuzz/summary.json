@@ -1,0 +1,72 @@
+{
+ "gate": "B9 gate 3 (H4)",
+ "source": "git archive e54541a; crates/grizzbit/src 0ad2a00 and crates/grizzbit/fuzz 5af0615, identical in the candidate 8517ef1",
+ "toolchain": "nightly-2026-10-11, cargo-fuzz 0.13.2, -O -a",
+ "limits": "-timeout=20 -rss_limit_mb=2048, -malloc_limit_mb 64 (256 roundtrip), -max_len 65536 (300000 roundtrip), -max_total_time=7600",
+ "seeding": "golden chunks as the nightly workflow (checksum removed) plus #394's earlier development corpora",
+ "cpu_time": "user + sys of /usr/bin/time -l (cargo fuzz run and its fuzz process)",
+ "runs": [
+  {
+   "target": "decode_sealed",
+   "start": "2026-11-16T08:20:09Z",
+   "end": "2026-11-16T10:26:51Z",
+   "completed": true,
+   "exit": "exit 0",
+   "executions": 92365785,
+   "wall_s": 7601.64,
+   "user_s": 7360.91,
+   "sys_s": 105.82,
+   "cpu_hours": 2.0741,
+   "findings": 0,
+   "artifacts": 0,
+   "last_status": "###### End of recommended dictionary. ######"
+  },
+  {
+   "target": "decode_v5",
+   "start": "2026-11-16T08:20:09Z",
+   "end": "2026-11-16T10:26:51Z",
+   "completed": true,
+   "exit": "exit 0",
+   "executions": 161302043,
+   "wall_s": 7601.64,
+   "user_s": 7288.65,
+   "sys_s": 176.33,
+   "cpu_hours": 2.0736,
+   "findings": 0,
+   "artifacts": 0,
+   "last_status": "###### End of recommended dictionary. ######"
+  },
+  {
+   "target": "decode_v6",
+   "start": "2026-11-16T08:20:09Z",
+   "end": "2026-11-16T10:26:51Z",
+   "completed": true,
+   "exit": "exit 0",
+   "executions": 269599012,
+   "wall_s": 7601.63,
+   "user_s": 7389.19,
+   "sys_s": 78.6,
+   "cpu_hours": 2.0744,
+   "findings": 0,
+   "artifacts": 0,
+   "last_status": "###### End of recommended dictionary. ######"
+  },
+  {
+   "target": "roundtrip",
+   "start": "2026-11-16T08:20:09Z",
+   "end": "2026-11-16T10:26:51Z",
+   "completed": true,
+   "exit": "exit 0",
+   "executions": 3077645,
+   "wall_s": 7601.66,
+   "user_s": 7037.84,
+   "sys_s": 426.88,
+   "cpu_hours": 2.0735,
+   "findings": 0,
+   "artifacts": 0,
+   "last_status": "###### End of recommended dictionary. ######"
+  }
+ ],
+ "total_cpu_hours": 8.2956,
+ "pass": true
+}

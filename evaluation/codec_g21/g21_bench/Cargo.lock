@@ -11,4 +11,4 @@ dependencies = [
 
 [[package]]
 name = "grizzbit"
-version = "0.3.8"
+version = "0.3.12"

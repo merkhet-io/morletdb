@@ -1,0 +1,25 @@
+"\007\000\000\000" # Uses: 25037
+"\000@" # Uses: 21955
+"\000\000\0008" # Uses: 17377
+"r\014\000\000\000\000\000\000" # Uses: 7349
+":\000\000\000\000\000\000\000" # Uses: 78
+###### End of recommended dictionary. ######
+Done 92365785 runs in 7601 second(s)
+     7601.64 real      7360.91 user       105.82 sys
+           582664192  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+             9031973  page reclaims
+                  46  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                 691  signals received
+                2663  voluntary context switches
+             9535601  involuntary context switches
+           157644163  instructions retired
+            61020224  cycles elapsed
+             2130280  peak memory footprint

@@ -91,6 +91,12 @@ jobs:
           key: core-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --all -- --check
       - run: cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite
+      # B9 H3(b) (evaluation/speed_b9/PROTOCOL.md): the log shows which LPC kernels were compared on this CPU
+      # (`LPC kernels: [...], detected ...`) and the corpus byte test's hashes.
+      - name: LPC kernel equivalence and corpus bytes on this CPU, output shown
+        run: |
+          cargo test --locked -p grizzbit --lib lpc_kernel::tests -- --nocapture
+          cargo test --locked -p grizzbit --test corpus_bytes -- --nocapture
       - run: cargo clippy --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite --all-targets -- -D warnings
       - uses: actions/setup-python@v5
         with:

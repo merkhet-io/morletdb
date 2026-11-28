@@ -1,0 +1,17 @@
+[package]
+name = "b9codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Study B9 harness (PROTOCOL.md section 3), based on B8's b8codec: G1, G1+6, G21 and G21+6 per chunk, through the
+# grizzbit crate of the arm it is copied into. No other dependency, so it builds offline.
+[dependencies]
+grizzbit = { path = "../../../crates/grizzbit" }
+
+[workspace]
+
+# B8's release profile.
+[profile.release]
+panic = "unwind"
+lto = "thin"

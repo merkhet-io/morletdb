@@ -12,6 +12,16 @@
 //! Every chunk of every arm is decoded and compared bit for bit (a mismatch aborts), and no 2.1 chunk may be
 //! larger than its Grizzbit 1 chunk. Sizes include every chunk's header and CRC-32C. Speed: single thread,
 //! best of REPS passes over all chunks (encode, then decode). One JSON line on stdout.
+//!
+//! Profiling aids (#394; DEVELOPMENT ONLY, nothing here is a measurement to quote):
+//!
+//!   g21_bench prof decode|encode ARM FILE QUANTUM CHUNK SECONDS
+//!     encodes every chunk once with ARM (g1, corr, lpc, g21, or f32: `encode_with_float32` over 2.1), checks it decodes bit for bit, then only decodes
+//!     (or only encodes) the same chunks in a loop for about SECONDS, so a sampling profiler (`sample PID 15`)
+//!     sees a steady state. Prints the pid first and the rate of each pass to stderr.
+//!   g21_bench phases FILE QUANTUM CHUNK REPS
+//!     a differential phase breakdown with the public API only: decode time per sample of each arm (best of
+//!     REPS), plus the CRC-32C pass and the `validate` pass every decode does, and each arm's chunk layouts.
 use grizzbit::{
     decode, encode, encode_experimental, grizzbit21_layout, Grizzbit21Features, LpcSearch,
 };
@@ -142,6 +152,14 @@ fn arm(
 
 fn main() {
     let a: Vec<String> = std::env::args().collect();
+    if a[1] == "prof" {
+        prof(&a[2..]);
+        return;
+    }
+    if a[1] == "phases" {
+        phases(&a[2..]);
+        return;
+    }
     if a[1] == "loop" {
         // Profiling aid: g21_bench loop FILE QUANTUM CHUNK PASSES encodes with Grizzbit 2.1 only.
         let x = read_series(&a[2]);
@@ -194,4 +212,131 @@ fn main() {
         kinds[2],
         rows.join(",")
     );
+}
+
+fn encode_arm(name: &str, c: &[f64], q: f64) -> Vec<u8> {
+    let f = |corrections, lpc| Grizzbit21Features {
+        corrections,
+        lpc,
+        search: LpcSearch::DEFAULT,
+    };
+    match name {
+        "g1" => encode(c, q).unwrap(),
+        "corr" => encode_experimental(c, q, f(true, false)).unwrap(),
+        "lpc" => encode_experimental(c, q, f(false, true)).unwrap(),
+        "g21" => grizzbit::encode_with(c, q, grizzbit::Format::Grizzbit21).unwrap(),
+        "f32" => grizzbit::encode_with_float32(c, q, grizzbit::Format::Grizzbit21).unwrap(),
+        _ => panic!("arm must be g1, corr, lpc, g21 or f32"),
+    }
+}
+
+fn prof(a: &[String]) {
+    let (what, name, path) = (a[0].as_str(), a[1].as_str(), &a[2]);
+    let q = a[3].parse::<f64>().unwrap();
+    let size = a[4].parse::<usize>().unwrap();
+    let secs = a[5].parse::<f64>().unwrap();
+    let x = read_series(path);
+    let chunks: Vec<&[f64]> = x.chunks(size).collect();
+    let enc: Vec<Vec<u8>> = chunks.iter().map(|c| encode_arm(name, c, q)).collect();
+    for (e, c) in enc.iter().zip(&chunks) {
+        assert!(same(&decode(e).unwrap(), c), "does not decode bit for bit");
+    }
+    let mut versions = [0usize; 8];
+    for e in &enc {
+        versions[e[0] as usize & 7] += 1;
+    }
+    eprintln!("pid {}", std::process::id());
+    eprintln!("chunks by format version (index = version): {versions:?}");
+    let start = Instant::now();
+    let mut passes = 0usize;
+    let mut sink = 0usize;
+    while start.elapsed().as_secs_f64() < secs {
+        let t = Instant::now();
+        if what == "decode" {
+            for e in &enc {
+                sink += decode(std::hint::black_box(e)).unwrap().len();
+            }
+        } else {
+            for c in &chunks {
+                sink += encode_arm(name, std::hint::black_box(c), q).len();
+            }
+        }
+        passes += 1;
+        if passes.is_multiple_of(20) {
+            eprintln!(
+                "pass {passes}: {:.2} M samples/s",
+                x.len() as f64 / t.elapsed().as_secs_f64() / 1e6
+            );
+        }
+    }
+    let total = start.elapsed().as_secs_f64();
+    println!(
+        "{what} {name}: {passes} passes, {:.2} M samples/s mean (sink {sink})",
+        (passes * x.len()) as f64 / total / 1e6
+    );
+}
+
+/// Best-of-`reps` nanoseconds per sample of `f` over `n` samples.
+fn ns_per_sample(n: usize, reps: usize, mut f: impl FnMut() -> usize) -> f64 {
+    let mut best = f64::MAX;
+    for _ in 0..reps {
+        let t = Instant::now();
+        std::hint::black_box(f());
+        best = best.min(t.elapsed().as_secs_f64());
+    }
+    best * 1e9 / n as f64
+}
+
+fn phases(a: &[String]) {
+    let path = &a[0];
+    let q = a[1].parse::<f64>().unwrap();
+    let size = a[2].parse::<usize>().unwrap();
+    let reps = a[3].parse::<usize>().unwrap();
+    let x = read_series(path);
+    let n = x.len();
+    let chunks: Vec<&[f64]> = x.chunks(size).collect();
+    let mut rows = Vec::new();
+    for name in ["g1", "corr", "lpc", "g21"] {
+        let enc: Vec<Vec<u8>> = chunks.iter().map(|c| encode_arm(name, c, q)).collect();
+        let mut layout = [0usize; 4];
+        let mut lpc = 0usize;
+        for (e, c) in enc.iter().zip(&chunks) {
+            assert!(same(&decode(e).unwrap(), c));
+            if let Some((mode, l)) = grizzbit21_layout(e) {
+                layout[mode as usize] += 1;
+                lpc += l as usize;
+            }
+        }
+        let bytes: usize = enc.iter().map(Vec::len).sum();
+        let dec = ns_per_sample(n, reps, || {
+            enc.iter().map(|e| decode(e).unwrap().len()).sum()
+        });
+        let crc = ns_per_sample(n, reps, || {
+            enc.iter().map(|e| grizzbit::crc32c(e) as usize).sum()
+        });
+        let enc_ns = ns_per_sample(n, reps.min(3), || {
+            chunks.iter().map(|c| encode_arm(name, c, q).len()).sum()
+        });
+        rows.push(format!(
+            "{name:>5}: {:.3} bits/sample, decode {dec:.2} ns/sample (crc {crc:.2}), encode {enc_ns:.1} ns/sample, \
+             v5 layouts none/per-sample/table/exceptions {}/{}/{}/{}, LPC {lpc}",
+            8.0 * bytes as f64 / n as f64,
+            layout[0],
+            layout[1],
+            layout[2],
+            layout[3],
+        ));
+    }
+    let val = ns_per_sample(n, reps, || {
+        chunks
+            .iter()
+            .map(|c| grizzbit::validate(c).is_ok() as usize)
+            .sum()
+    });
+    let copy = ns_per_sample(n, reps, || chunks.iter().map(|c| c.to_vec().len()).sum());
+    println!("{path}: {n} samples, {} chunks of {size}", chunks.len());
+    for r in rows {
+        println!("{r}");
+    }
+    println!("validate {val:.2} ns/sample, Vec<f64> copy {copy:.2} ns/sample");
 }

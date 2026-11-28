@@ -1,0 +1,36 @@
+$ date
+Mon 16 Nov 10:07:05 GMT 2026
+
+$ uname -a
+Linux nextcloudpi 6.1.21-v8+ #1642 SMP PREEMPT Mon Apr  3 17:24:16 BST 2023 aarch64 GNU/Linux
+
+$ uptime
+ 10:07:05 up 5 days, 14:11,  0 users,  load average: 1.10, 0.83, 0.75
+
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:             909         124         468           0         316         722
+Swap:             99          41          58
+
+$ docker ps -a --format '{{.Names}} {{.Status}}'
+stick-db Exited (137) 3 days ago
+iu4-pi Exited (0) 2 hours ago
+dec-real Exited (0) 2 hours ago
+pc-p1-steward Exited (0) 5 days ago
+pc-p1-writer Exited (1) 5 days ago
+pc-p1-db Exited (0) 3 days ago
+
+$ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+ondemand
+ondemand
+ondemand
+ondemand
+
+$ vcgencmd measure_temp
+temp=58.0'C
+
+$ vcgencmd measure_clock arm
+frequency(48)=1400000000
+
+$ vcgencmd get_throttled
+throttled=0x80000
