@@ -3,6 +3,7 @@
 -- interpretation revisions (#620). Existing calibration tables are brought up to date (below).
 -- morlet_interpretation_revisions, morlet_label_interpretation: no revision claimed when row policies could
 -- hide revisions (#608).
+-- morlet_sample_utc: the piece of a sample from the anchors around it, by index (#546).
 \echo Use "ALTER EXTENSION pg_morlet UPDATE TO '0.3.18'" to load this file. \quit
 
 CREATE FUNCTION public.morlet_calibration_bind_refs(collection regclass)
@@ -359,6 +360,93 @@ BEGIN
   END IF;
   NEW.interpretation_revision:=current_revision;
   RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_sample_utc(collection regclass,recording_id text,sample bigint,rho float8 DEFAULT NULL)
+RETURNS TABLE(utc_ns numeric,uncertainty_ns numeric,basis text,assumes_linear_clock boolean,extrapolated boolean,segment integer)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rec record; rel regclass; num numeric; den numeric; period numeric; rho_rec float8; start_ns numeric;
+  cur record; nxt record; prv record; fst record; found_cur boolean; found_nxt boolean; found_prv boolean; before_first boolean:=false;
+  first_n bigint; seg integer; dn numeric; dt numeric; kind text; na bigint; nb bigint; ua numeric; ub numeric;
+  same_next boolean; same_prev boolean; rho_used float8; active text; rc bigint;
+BEGIN
+  IF sample IS NULL OR sample<0 THEN RAISE EXCEPTION 'sample must be >= 0'; END IF;
+  -- the checks, messages and order of morlet_time_pieces
+  IF collection IS NULL OR recording_id IS NULL OR (rho IS NOT NULL AND NOT (rho>=0 AND rho<1)) THEN
+    RAISE EXCEPTION 'collection and recording_id are required, and rho must be in [0, 1)';
+  END IF;
+  EXECUTE format('SELECT sample_rate_hz,metadata FROM %s WHERE recording_id=$1',collection) INTO rec USING recording_id;
+  IF rec.sample_rate_hz IS NULL THEN RAISE EXCEPTION 'recording % does not exist or is not visible',recording_id; END IF;
+  SELECT x.num,x.den INTO num,den FROM public.morlet_rate_ratio(rec.sample_rate_hz) x;
+  period:=den*1000000000/num;
+  IF rec.metadata#>'{time_axis,rho}' IS NOT NULL THEN
+    IF jsonb_typeof(rec.metadata#>'{time_axis,rho}')<>'number' OR NOT ((rec.metadata#>>'{time_axis,rho}')::float8>=0
+        AND (rec.metadata#>>'{time_axis,rho}')::float8<1) THEN
+      RAISE EXCEPTION 'recording %: metadata time_axis.rho must be a number in [0, 1)',recording_id;
+    END IF;
+    rho_rec:=(rec.metadata#>>'{time_axis,rho}')::float8;
+  END IF;
+  SELECT to_regclass(format('%I.%I',n.nspname,cl.relname||'_time_anchors')) INTO rel
+    FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  IF rel IS NOT NULL THEN
+    active:=format('SELECT x.sample_offset AS n,x.utc_ns::numeric AS t,x.uncertainty_ns::numeric AS u,x.source,
+      x.break_before FROM %1$s x WHERE x.recording_id=$1 AND NOT x.retracted
+      AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.anchor_id) AND ',rel);
+    EXECUTE active||'x.sample_offset<=$2 ORDER BY x.sample_offset DESC LIMIT 1' INTO cur USING recording_id,sample;
+    GET DIAGNOSTICS rc = ROW_COUNT;
+    found_cur:=rc>0;
+    IF NOT found_cur THEN                     -- before the first anchor: piece 0, extrapolated from the first one
+      EXECUTE active||'true ORDER BY x.sample_offset LIMIT 1' INTO cur USING recording_id;
+      GET DIAGNOSTICS rc = ROW_COUNT;
+      found_cur:=rc>0;
+      before_first:=found_cur;
+    END IF;
+  END IF;
+  IF rel IS NULL OR NOT found_cur THEN
+    start_ns:=public.morlet_recording_start_ns(rec.metadata);
+    IF start_ns IS NULL THEN RETURN; END IF;
+    RETURN QUERY SELECT start_ns+(sample-0::bigint)*(den*1000000000)/num,NULL::numeric,'start+rate'::text,false,false,0;
+    RETURN;
+  END IF;
+  EXECUTE active||'x.sample_offset>$2 ORDER BY x.sample_offset LIMIT 1' INTO nxt USING recording_id,cur.n;
+  GET DIAGNOSTICS rc = ROW_COUNT;
+  found_nxt:=rc>0;
+  EXECUTE active||'x.sample_offset<$2 ORDER BY x.sample_offset DESC LIMIT 1' INTO prv USING recording_id,cur.n;
+  GET DIAGNOSTICS rc = ROW_COUNT;
+  found_prv:=rc>0;
+  IF found_prv THEN
+    EXECUTE active||'true ORDER BY x.sample_offset LIMIT 1' INTO fst USING recording_id;
+    first_n:=fst.n;
+    -- the active breaks after the first anchor, up to this one (a break on the first anchor starts no segment): the
+    -- rows not retracted, less those a revision superseded (found from the revisions, which are few)
+    EXECUTE format('SELECT (SELECT count(*) FROM %1$s x WHERE x.recording_id=$1 AND x.break_before AND NOT x.retracted
+        AND x.sample_offset>$2 AND x.sample_offset<=$3)
+      -(SELECT count(*) FROM %1$s y JOIN %1$s x ON x.anchor_id=y.supersedes WHERE y.supersedes IS NOT NULL
+        AND x.recording_id=$1 AND x.break_before AND NOT x.retracted AND x.sample_offset>$2 AND x.sample_offset<=$3)',rel)
+      INTO seg USING recording_id,first_n,cur.n;
+  ELSE
+    seg:=0;
+  END IF;
+  -- the piece of anchor cur, as morlet_time_pieces builds it: its slope from the next anchor of the segment, else from
+  -- the previous one, else the declared rate
+  same_next:=found_nxt AND NOT nxt.break_before;
+  same_prev:=found_prv AND NOT cur.break_before;
+  IF same_next THEN
+    kind:='between'; dn:=(nxt.n-cur.n)::numeric; dt:=nxt.t-cur.t; na:=cur.n; nb:=nxt.n; ua:=cur.u; ub:=nxt.u;
+  ELSIF same_prev THEN
+    kind:='after'; dn:=(cur.n-prv.n)::numeric; dt:=cur.t-prv.t; na:=prv.n; nb:=cur.n; ua:=prv.u; ub:=cur.u;
+  ELSE
+    kind:='after'; dn:=num; dt:=den*1000000000;
+  END IF;
+  -- the caller's ρ, else the recording's, else the default of the anchors involved (none if one is an estimate)
+  rho_used:=coalesce(rho,rho_rec,CASE WHEN public.morlet_default_clock_rho(cur.source) IS NULL
+      OR (same_next AND public.morlet_default_clock_rho(nxt.source) IS NULL)
+      OR (NOT same_next AND same_prev AND public.morlet_default_clock_rho(prv.source) IS NULL)
+    THEN NULL ELSE public.morlet_default_clock_rho(cur.source) END);
+  IF before_first THEN kind:='before'; END IF;
+  RETURN QUERY SELECT cur.t+(sample-cur.n)*dt/dn,
+    public.morlet_piece_uncertainty(kind,sample,cur.n,cur.u,na,nb,ua,ub,rho_used,period),
+    'anchors'::text,rho_used IS NULL,kind IN ('before','after') AND sample<>cur.n,seg;
 END $$;
 
 DO $morlet_upgrade$
