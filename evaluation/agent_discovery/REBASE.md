@@ -36,3 +36,14 @@ this 19-tool rerun follows the explicit rebase adjustment above. Do not change t
 operation or paths after measurement. Record the measured source commit as well as source hashes.
 The new notes affect contract hashes in the operation index; the frozen selective cases still
 retrieve investigate_interval_v2, not the full semantics of the two newer tools.
+
+### Recorded result
+
+The [#643 rerun](results-d1-20261128-643.json) measured source commit
+`50f86b5ea90c7805b1a059d861df3958f4eac01a` with baseline
+`921bfe7982badf8ab0c9be5f0b6410b3d90c04d8`. Actual counts: 19 baseline and 24 current tools.
+The four scenarios contain 8,512 / 14,854 / 810 / 2,578 tokens respectively; see
+[the results table](README.md#follow-up-643-24-tool-measurement) for bytes and interpretation.
+The artifact's source hashes match the measured source; all archived context hashes, byte counts
+and token counts were recounted. This is a separate development rerun, not the original D1 run,
+and makes no claim about task success or end-to-end token savings.
