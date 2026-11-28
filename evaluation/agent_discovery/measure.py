@@ -23,6 +23,16 @@ def sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def source_state(root):
+    """HEAD identifies the base; hashes identify working files when source_dirty is true.
+
+    Include staged, unstaged and untracked changes; sample before writing the new artifact.
+    """
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    status = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=normal"], cwd=root)
+    return {"source_commit": commit, "source_dirty": bool(status)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group(required=True)
@@ -87,6 +97,7 @@ def main():
     sources = sorted((ROOT / "tools/mcp").glob("*.py")) + [Path(__file__), Path(__file__).with_name("PROTOCOL.md")]
     report = {"protocol": "D1", "classification": "development; deterministic context accounting, not agent performance",
               "timestamp_utc": datetime.now(timezone.utc).isoformat(), "baseline_commit": baseline,
+              **source_state(ROOT),
               "baseline_definition_source": "current registrations filtered by baseline names; not historical schemas",
               "python": sys.version, "packages": {p: importlib.metadata.version(p) for p in ("tiktoken", "mcp", "pydantic")},
               "encoding": "o200k_base", "legacy_tools": len(old), "current_tools": len(tools),

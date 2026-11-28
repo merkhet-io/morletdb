@@ -91,6 +91,67 @@ SEMANTICS = {
         "coverage": "Inspect scope; no match does not establish absence in unsearched data.",
         "before_only": "Earlier signal intervals; does not establish historical annotation availability.",
     },
+    "explain_match": {
+        "stability": "experimental; requires SQL 0.3.16 or later and the SDK",
+        "interval": "Zero-based, half-open query interval; match starts at match_start and has the same length. "
+                    "Length must be a stored power-of-two window of 512..32768 samples. "
+                    "Use the query and stored window from the search, with the same sample rate, channel and unit.",
+        "query_shift_samples": "Pass the hit's query_shift_samples: it shifts both query endpoints. "
+                               "Omitting it for a shifted hit explains another score.",
+        "contribution_bins": {"minimum": 1, "maximum": 64, "on_invalid": "error"},
+        "interpretation": "Contributions explain the similarity score, not a fault's cause. Envelopes are normalized; "
+                          "compare query_stats and match_stats for amplitude. Timing is no finer than step_samples.",
+        "lag": "Uses the server search setting max_lag_fraction=0.075; another tolerance explains another score. "
+               "Positive lag means the query feature lies that many envelope steps earlier in the match.",
+        "interpretation_revisions": "Reported from SQL 0.3.18 only when interpretation history is tracked and "
+                                    "completely readable by this role. Absent never means revision 0 or unchanged.",
+        "raw_evidence": "match_raw_status=unavailable can accompany an explained score when match samples "
+                        "were removed or are hidden; it does not establish raw sample equality.",
+        "failures": "evidence_unavailable, budget_exceeded, access_denied and other tool errors are not negative "
+                    "results. Server statement timeout and shared admission limits apply.",
+    },
+    "resolve_incident": {
+        "stability": "experimental; requires SQL 0.3.15 or later and the SDK",
+        "incident_time": "ISO 8601 with an explicit UTC offset or Z; never infer the plant timezone.",
+        "interval": "UTC window [incident - before_s, incident + after_s); each candidate is one recording's "
+                    "zero-based, half-open sample interval. Recordings are never concatenated or resampled.",
+        "window_seconds": {"per_argument_minimum": 0, "per_argument_maximum": 2678400,
+                           "finite": True, "both_zero": "error", "on_invalid": "error"},
+        "time_basis": "Use recording time anchors where present, otherwise start + sample rate; candidates report "
+                      "their time basis and endpoint uncertainty. Unknown uncertainty is not zero; inspect "
+                      "time_uncertainty_unknown, assumes_linear_clock and extrapolated_time.",
+        "ambiguity": "Read states before using candidates: ambiguous_asset, asset_identity_not_scoped, "
+                     "multiple_sensors and multiple_recordings_per_sensor preserve distinct identities/recordings. "
+                     "Clock breaks can produce several intervals; ambiguous_time flags backward-clock ambiguity, "
+                     "and partial_window flags incomplete window coverage.",
+        "sensor_identity": {
+            "multiple_sensors": "Candidates have different channels, or different values of the operator's "
+                                "configured sensor metadata key.",
+            "sensor_not_recorded": "A sensor metadata key is configured but a candidate has no value for it. "
+                                   "Do not treat such candidates as one sensor or a uniquely identified sensor.",
+        },
+        "coverage": "asset_not_found, recordings_without_time_axis and no_recording_at_time are distinct. "
+                    "No candidate is not proof that nothing was recorded or happened: permissions, missing time "
+                    "axes and retention can hide evidence. Inspect coverage and unreadable_samples.",
+        "identifiers": "Asset, sensor, identity and reference metadata keys are operator-configured. "
+                       "References are verified only by equal stored JSON values; claims are not verified joins.",
+        "limits": {
+            "timeout_ms": {"default": 10000, "maximum": 300000,
+                           "setting": "MORLET_MCP_INCIDENT_TIMEOUT_MS"},
+            "max_recordings": {"default": 200, "maximum": 100000,
+                               "setting": "MORLET_MCP_INCIDENT_MAX_RECORDINGS"},
+            "max_output_bytes": {"default": 64000, "maximum": 2000000,
+                                 "setting": "MORLET_MCP_INCIDENT_MAX_OUTPUT_BYTES"},
+            "scope": "A positive MORLET_MCP_TIMEOUT_MS further caps the deadline. Recording limits count possible "
+                     "window overlaps (anchored recordings always count). Output cap includes text and structured "
+                     "results together. Shared admission limits apply; exceeding budgets fails, not a negative result.",
+        },
+        "lists": "Diagnostic lists of identities, recordings_without_time_axis and recordings_outside_window "
+                 "show at most 100 entries with lists_truncated and exact *_count totals; candidates are not "
+                 "silently truncated, and states consider every recording.",
+        "next_step": "Select a power-of-two window of 512..32768 samples inside a candidate for investigate_interval; "
+                     "the whole candidate usually is not a valid search window.",
+    },
     "read_interval": {
         "representation": "samples if length <= max_points; otherwise min_max buckets, not exact samples.",
         "max_points": {"minimum": 10, "maximum": 20000, "on_invalid": "clamp"},

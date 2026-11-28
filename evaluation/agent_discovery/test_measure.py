@@ -8,6 +8,9 @@ import tempfile
 import unittest
 
 
+from measure import source_state
+
+
 SCRIPT = Path(__file__).with_name('measure.py')
 
 
@@ -15,6 +18,28 @@ class MeasurementCLI(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([sys.executable, '-O', str(SCRIPT), *map(str, args)],
                               capture_output=True, text=True, timeout=30)
+
+    def test_source_state_distinguishes_clean_staged_unstaged_and_untracked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+            git('init', '-q')
+            tracked = root / 'source.py'
+            tracked.write_text('original\n', encoding='utf-8')
+            git('add', 'source.py')
+            git('-c', 'user.name=D1 test', '-c', 'user.email=d1@example.invalid',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture')
+            commit = git('rev-parse', 'HEAD')
+            self.assertEqual(source_state(root), {'source_commit': commit, 'source_dirty': False})
+            tracked.write_text('modified\n', encoding='utf-8')
+            self.assertEqual(source_state(root), {'source_commit': commit, 'source_dirty': True})
+            git('add', 'source.py')
+            self.assertTrue(source_state(root)['source_dirty'])
+            git('restore', '--staged', '--worktree', 'source.py')
+            self.assertFalse(source_state(root)['source_dirty'])
+            (root / 'untracked.py').write_text('new\n', encoding='utf-8')
+            self.assertTrue(source_state(root)['source_dirty'])
 
     def test_requires_exactly_one_mode(self):
         for args in ((), ('--output', 'unused.json', '--recount', 'unused.json')):
