@@ -4,7 +4,7 @@
 timing and metadata, read exact sample intervals, search for similar intervals, and resolve every result to
 the stored samples. It wraps pg_morlet's SQL functions and adds no database features of its own.
 
-- Package: `morletdb` 0.1.0b5 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
+- Package: `morletdb` 0.1.0b6 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
   (`[plot]` extra, matplotlib) is optional and used only by the example.
 - Not on PyPI yet: install a release wheel ([releases](releases.md#install-the-python-sdk)), or
   `pip install "./sdk/python[plot]"` from a checkout.
@@ -28,7 +28,7 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.6
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.7
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
@@ -316,7 +316,7 @@ distance, winning lag, correlations, contributions and the raw statistics of bot
 ([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It explains the similarity score, not a
 fault's cause.
 
-Amplitudes depend on each recording's unit and calibration. With interpretation history enabled, on SQL 0.3.18 or
+Amplitudes depend on each recording's unit and calibration. From 0.4.0-beta.7, with interpretation history enabled, on SQL 0.3.18 or
 later, `MatchExplanation.interpretation_revisions` maps the query's and the match's recording IDs to the revision they were read
 under, read in the explanation's own statement. `search(..., interpretation_revisions=True)` reports the same for the
 query and every match (`SearchResult.interpretation_revisions`, `Match.interpretation_revision`), read by one more

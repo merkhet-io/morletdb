@@ -1,6 +1,6 @@
 # Roadmap: from beta to 1.0
 
-Status: updated 2026-11-27, at release 0.4.0-beta.6. The gates and their evidence are tracked in
+Status: updated 2026-11-28, at release 0.4.0-beta.7. The gates and their evidence are tracked in
 [#201](https://github.com/merkhet-io/morletdb/issues/201); this page summarizes them. Documenting a gate does not
 satisfy it. The [architecture](architecture.md) describes what exists, the [support boundaries](../SUPPORT.md) what
 the beta supports.
@@ -52,7 +52,7 @@ recognized as such. Better-looking explanations alone do not count as improvemen
 
 ## Where it stands
 
-The server edition is in **beta** since 0.4.0-beta.1 (2026-11-19); 0.4.0-beta.6 is the current release. From the
+The server edition is in **beta** since 0.4.0-beta.1 (2026-11-19); 0.4.0-beta.7 is the current release. From the
 beta on, the [API and on-disk promises](api-stability.md) apply: stable SQL functions keep their behaviour, stored
 chunks stay readable, and every release upgrades in place, tested in CI from every earlier release. The embedded
 SQLite edition is **experimental** ([embedded edition](embedded-edition.md)).

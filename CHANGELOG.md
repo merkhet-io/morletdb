@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0-beta.7
+
+**The seventh beta.** SQL version 0.3.18, with an update script from 0.3.17: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. Python SDK 0.1.0b6. The chunk format, the steward and the codec are unchanged; the MCP server reports
+interpretation revisions. **If you use calibration sets with row security on 0.4.0-beta.6, update:** after
+`ALTER EXTENSION pg_morlet UPDATE`, grant writers INSERT and readers SELECT on each `<collection>_calibration_refs`
+table. Collections without calibration sets or interpretation history behave as before.
+
 - **Calibration sets (experimental): evidence follows recordings, not reusable IDs (#621, SQL 0.3.18).** Each revision now keeps
   references to the recordings it was captured from. Deleting a member recording cuts its reference for good, so a
   later recording under the same ID never makes the earlier evidence visible under row security. Run
