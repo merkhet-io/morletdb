@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 src = (ROOT / "tools/mcp/morlet_mcp.py").read_text()
-tools = re.findall(r"@mcp\.tool\([^)]*\)\s*\n(?:@[^\n]*\n)*def (\w+)\(", src)
+tools = re.findall(r"@mcp\.tool\([^)]*\)\s*\n(?:@[^\n]*\n)*(?:async )?def (\w+)\(", src)
 md = set(re.findall(r"^\| `(\w+)` \|", (ROOT / "docs/mcp.md").read_text(), re.M))
 html = (ROOT / "docs/docs.html").read_text()
 i = html.index('id="connect-an-ai-agent-mcp"')

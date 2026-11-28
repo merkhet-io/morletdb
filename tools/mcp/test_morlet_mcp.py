@@ -20,10 +20,10 @@ class Server(unittest.TestCase):
 
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_interval", "envelope_spectrum",
-                                                         "explain_match", "find_onsets", "investigate_interval", "labels", "latest",
-                                                         "list_collections", "list_recordings", "locate_time",
-                                                         "read_interval", "resolve_incident", "search_from_time", "search_similar",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_collection", "describe_interval", "describe_operation", "envelope_spectrum",
+                                                         "explain_match", "find_onsets", "investigate_interval", "investigate_interval_v2", "labels", "latest",
+                                                         "list_collections", "list_operations", "list_recordings", "locate_time",
+                                                         "read_interval", "read_interval_v2", "resolve_incident", "search_from_time", "search_similar",
                                                          "trend"])
         for t in tools:
             self.assertTrue(t.annotations.read_only_hint, t.name)
