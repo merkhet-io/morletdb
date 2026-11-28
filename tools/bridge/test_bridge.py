@@ -54,6 +54,10 @@ class LineProtocol(unittest.TestCase):
         self.assertIn('nonfinite="maximum,rms"', text)
         self.assertIn("interpretation_revision=2i", text)
 
+    def test_fixed_sink_tags_are_sorted_with_the_series_tags(self):
+        self.assertTrue(line("m", row(), {"site": "plant a", "zone": "3"}).startswith(
+            "m,asset=pump\\ A,calculation=interval-stats-v1,channel=vib\\,x,site=plant\\ a,zone=3 "))
+
 
 @unittest.skipUnless(DSN, "needs MORLET_BRIDGE_TEST_DSN")
 class Database(unittest.TestCase):
@@ -293,6 +297,9 @@ class Database(unittest.TestCase):
         self.append("a", 1024)
         self.b.drain(self.sid, 10)
         self.b.add_sink("influx", "line", options={"measurement": "vibration"})
+        for bad in ({"tags": {"asset": "x"}}, {"tags": {"site": ""}}, {"tags": ["site"]}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                self.b.add_sink("bad", "line", options=bad)
 
         def fail(_text):
             raise OSError("pipe closed")

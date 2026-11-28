@@ -263,6 +263,12 @@ class Bridge:
             target = rel["q"]
         elif kind != "line" or target is not None:
             raise ValueError("kind must be 'postgres' (with a target table) or 'line'")
+        else:
+            tags = (options or {}).get("tags", {})
+            if not isinstance(tags, dict) or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
+                                                 or k in ("asset", "calculation", "channel") for k, v in tags.items()):
+                raise ValueError("line sink tags must map nonempty strings to nonempty strings, other than "
+                                 "asset, calculation and channel")
         self.conn.execute("""INSERT INTO morlet_bridge.sinks (name, kind, target, options) VALUES (%s, %s, %s, %s)
             ON CONFLICT (name) DO NOTHING""", (name, kind, target, Jsonb(options or {})))
         row = self.one("SELECT * FROM morlet_bridge.sinks WHERE name = %s", (name,))
@@ -330,10 +336,11 @@ class Bridge:
         if sink["kind"] != "line":
             raise ValueError("lines is for line sinks")
         measurement = sink["options"].get("measurement", "morlet_metric")
+        extra = sink["options"].get("tags", {})
         rows = self.all(self.PENDING, (sink["sink_id"], limit))
         if not rows:
             return 0
-        write("".join(line(measurement, r) + "\n" for r in rows))
+        write("".join(line(measurement, r, extra) + "\n" for r in rows))
         with self.conn.transaction():
             for r in rows:
                 self.conn.execute("""INSERT INTO morlet_bridge.deliveries (sink_id, ledger_id) VALUES (%s, %s)
@@ -364,12 +371,14 @@ def _string(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
-def line(measurement, r):
+def line(measurement, r, extra_tags=None):
     """One point per ledger row. Tags (indexed) are asset, channel and calculation only, so the series count does
     not grow with recordings; the recording, its interval and the ledger ID are fields, enough to open the
     original samples. Floats are written in Python's shortest round-trip form, so they parse back to the same
     float64; NaN and infinities have no line-protocol form and are left out and named in `nonfinite`."""
-    tags = ",".join(f"{k}={_escape_key(str(r[k]))}" for k in ("asset", "calculation", "channel"))
+    # extra_tags: fixed per sink, e.g. {"site": "plant-a"}, so several MorletDB databases can share one bucket
+    keys = {**(extra_tags or {}), **{k: str(r[k]) for k in ("asset", "calculation", "channel")}}
+    tags = ",".join(f"{_escape_key(k)}={_escape_key(v)}" for k, v in sorted(keys.items()))
     fields, nonfinite = [], []
     for k in STATS:
         v = r[k]

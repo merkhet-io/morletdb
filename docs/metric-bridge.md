@@ -20,7 +20,7 @@ store is a copy.
 | Evidence | Each ledger row stores the SHA-256 of the raw interval bytes (signed zero included), so a copy can be checked against the samples it came from |
 | PostgreSQL sink | Exactly once: the copy and its delivery record commit in one transaction. A target row that differs from the ledger is reported as an error, not kept silently |
 | Line-protocol sink | Handed over at least once: a batch is recorded as delivered only after it was written; after a crash it is written again. InfluxDB identifies a point by measurement, tags and timestamp, so the repeat overwrites itself with the same values. Beyond the handoff (Telegraf's buffer and outputs) delivery is best effort |
-| No overwrites downstream | Two recordings of the same asset, channel and calculation never publish at the same timestamp; the second is refused, because downstream one point would replace the other |
+| No overwrites downstream | Within one database: two recordings of the same asset, channel and calculation never publish at the same timestamp; the second is refused, because downstream one point would replace the other. **Not covered across databases:** several MorletDB databases writing to one InfluxDB bucket must be told apart by a fixed tag per line sink (`add-sink NAME line --tag site=plant-a`), or use separate buckets |
 | Access | Readers of metrics need explicit grants; nothing is granted to PUBLIC. A metric's interval reference grants no access to the waveform |
 
 ## What it does not do (yet)
@@ -60,7 +60,8 @@ One point per window:
 morlet_metric,asset=pump-A,calculation=interval-stats-v1,channel=vib-x minimum=-1.0,maximum=2.0,mean=0.5,rms=1.224744871391589,sample_count=1024i,start_sample=0i,end_sample=1024i,ledger_id=1i,end_time_ns=1767225601000000000i,recording_id="a",collection="public.signals" 1767225600000000000
 ```
 
-- Tags are asset, calculation and channel only, so the number of series does not grow with every recording.
+- Tags are asset, calculation and channel, plus any fixed tags of the sink (such as `site`), so the number of
+  series does not grow with every recording.
   Recording, interval and ledger ID are fields: enough to open the original samples (for example from a Grafana
   data link to the MorletDB viewer).
 - Floats are written in their shortest round-trip form and parse back to the same float64. NaN and infinities have

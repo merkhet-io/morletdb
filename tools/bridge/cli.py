@@ -6,7 +6,7 @@
   cli.py register COLLECTION RECORDING ASSET CHANNEL [--window-samples N]
   cli.py drain SOURCE_ID [--max-windows N]          publish complete windows (one transaction each)
   cli.py add-sink NAME postgres [TARGET_TABLE]      default target: morlet_bridge.metrics
-  cli.py add-sink NAME line [--measurement M]
+  cli.py add-sink NAME line [--measurement M] [--tag KEY=VALUE ...]
   cli.py deliver NAME [--limit N]                   PostgreSQL sink, exactly once
   cli.py lines NAME [--limit N]                     line protocol to stdout once, at least once
   cli.py telegraf NAME [--drain-all] [--signal stdin|none] [--interval S]
@@ -78,6 +78,8 @@ def main(argv=None):
     a.add_argument("kind", choices=("postgres", "line"))
     a.add_argument("target", nargs="?")
     a.add_argument("--measurement")
+    a.add_argument("--tag", action="append", default=[], metavar="KEY=VALUE",
+                   help="fixed tag on every point of a line sink, e.g. site=plant-a (repeatable)")
     for c in ("deliver", "lines"):
         x = sub.add_parser(c)
         x.add_argument("name")
@@ -94,8 +96,8 @@ def main(argv=None):
     args = p.parse_args(argv)
     if args.cmd == "telegraf" and not args.interval > 0:
         p.error("--interval must be positive")
-    if args.cmd == "add-sink" and args.kind == "postgres" and args.measurement:
-        p.error("--measurement applies to line sinks only")
+    if args.cmd == "add-sink" and args.kind == "postgres" and (args.measurement or args.tag):
+        p.error("--measurement and --tag apply to line sinks only")
     if args.cmd == "status" and args.source_id is not None and args.sink:
         p.error("give a source ID or --sink, not both")
 
@@ -112,6 +114,10 @@ def main(argv=None):
             out = b.drain(args.source_id, args.max_windows)
         elif args.cmd == "add-sink":
             opts = {"measurement": args.measurement} if args.measurement else {}
+            if args.tag:
+                if any("=" not in t for t in args.tag):
+                    p.error("--tag takes KEY=VALUE")
+                opts["tags"] = dict(t.split("=", 1) for t in args.tag)
             if args.kind == "line" and args.target:
                 p.error("a line sink takes no target table")
             out = {"sink_id": b.add_sink(args.name, args.kind, args.target, opts)}
