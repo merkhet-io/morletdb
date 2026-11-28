@@ -73,6 +73,7 @@ html{background:#090c0d}body{min-height:100vh}.post{max-width:680px}.post p,.pos
 <h2>Try it on your own InfluxDB data</h2>
 <p>You do not need an export, shell access to a controller, or anything installed on the InfluxDB host. On a laptop with Docker in your network, the trial reads a few minutes of one measurement from InfluxDB 1.x or 2.x with a read-only user or token, gently, in slices of 60 seconds with a pause between them:</p>
 <div class="code-block"><span class="code-label">Shell</span><pre><code>cd examples/trial
+export TRIAL_UID=$(id -u) TRIAL_GID=$(id -g)            # Linux only: keeps the report folder writable
 # InfluxDB 1.x: a read-only user
 export INFLUX_USERNAME=reader INFLUX_PASSWORD='...'
 docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-db plant \
