@@ -50,8 +50,10 @@ publishes new windows and answers with the pending points. See [telegraf.conf](t
 ```
 
 The bridge hands each point to Telegraf at least once. Telegraf does not acknowledge receipt to an input and
-buffers in memory, so delivery beyond that handoff, to Telegraf's outputs, is best effort. This path has not yet
-been tested end to end with a real Telegraf and InfluxDB. The ledger keeps every point; `status --sink telegraf` shows what was handed over.
+buffers in memory, so delivery beyond that handoff, to Telegraf's outputs, is best effort. It is tested end to end with
+Telegraf 1.36.4 and InfluxDB 2.7.12 in [examples/influxdb](../../examples/influxdb/README.md), which also shows the
+Telegraf image with Python and psycopg the `execd` input needs. The ledger keeps every point; `status --sink telegraf`
+shows what was handed over.
 
 Atomic append and publication from Python, on one connection:
 

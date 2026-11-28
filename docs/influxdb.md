@@ -95,8 +95,8 @@ SeedLink in `examples/collectors/`, WinCC OA in `integrations/winccoa/`), or app
 ## Status and limits
 
 - MorletDB is in **beta** (0.4.0-beta.7): single node, PostgreSQL 17 to 19, Linux and macOS.
-- The line-protocol import and the trial are new; the bridge is experimental and not yet tested end to end with a
-  real Telegraf and InfluxDB.
+- The line-protocol import and the trial are new; the bridge is experimental. Its Telegraf path is tested end to end
+  with Telegraf 1.36.4 and InfluxDB 2.7.12 in the [example](../examples/influxdb/README.md).
 - Not supported: InfluxQL or Flux queries, the InfluxDB write API, irregular series below `--min-rate` as
   recordings.
 

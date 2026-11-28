@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Example: MorletDB beside InfluxDB (`examples/influxdb`).** One `docker compose up`: a synthetic 4 kHz collector
+  writes waveforms to MorletDB and publishes metrics per window through the bridge; Telegraf's `execd` input carries
+  them to InfluxDB 2.7; a Grafana dashboard shows RMS and peak per pump and opens the exact waveform interval in the
+  viewer. `check.py` verifies that InfluxDB holds exactly what the bridge handed over.
+
 - **InfluxDB line-protocol import and a local trial (adoption).** `morlet_import.py` reads InfluxDB exports (`.lp`,
   `--format influx`): each eligible numeric series (measurement, tag set, field; at `--min-rate`, default 100 Hz, or
   faster) becomes a recording with its tags in the metadata and its timestamps as time anchors. Left out and
@@ -15,8 +20,8 @@
   RMS) computed from exact waveform windows into a ledger with exact nanosecond times, a raw-sample hash and the
   recording's specification, time-axis version and interpretation revision. Sinks: a PostgreSQL table in the same
   database, exactly once (tested with an ordinary table; a TimescaleDB hypertable is possible but untested), and
-  InfluxDB line protocol for Telegraf's `execd` input: handed to Telegraf at least once, best effort beyond it, not yet
-  tested end to end with a real Telegraf and InfluxDB. Phase 1 has one calculation over fixed windows, no read-back
+  InfluxDB line protocol for Telegraf's `execd` input: handed to Telegraf at least once, best effort beyond it (tested end to end with
+  Telegraf 1.36.4 and InfluxDB 2.7.12 in `examples/influxdb`). Phase 1 has one calculation over fixed windows, no read-back
   check and no retention coordination. A changed source, including a reverted calibration correction, stops
   publication until reviewed; sources with row security are refused. The pg_morlet extension SQL is unchanged; the
   bridge creates its own schema, `morlet_bridge`. See `docs/metric-bridge.md`.
